@@ -41,6 +41,7 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -60,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -142,8 +144,10 @@ private fun PanelTab(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun NowPlayingContent(track: Track, positionMs: Long, onSeek: (Long) -> Unit) {
     val lyricsVersion = DesktopLyrics.version
+    var retry by remember(track.path) { mutableIntStateOf(0) }
     var lyrics by remember(track.path, lyricsVersion) { mutableStateOf<LyricsResult?>(null) }
-    LaunchedEffect(track.path, lyricsVersion) {
+    LaunchedEffect(track.path, lyricsVersion, retry) {
+        lyrics = null
         lyrics = withContext(Dispatchers.IO) { DesktopLyrics.load(track) }
     }
     val actions = LocalTrackActions.current
@@ -182,13 +186,20 @@ private fun NowPlayingContent(track: Track, positionMs: Long, onSeek: (Long) -> 
                 track.specsLabel?.let { NeonBadge(it, color = Neon.Text) }
             }
             Spacer(Modifier.height(16.dp))
-            LyricsCard(lyrics, positionMs, onSeek, Modifier.weight(1f).fillMaxWidth(), onSearch = actions?.let { a -> { a.findLyrics(track) } })
+            LyricsCard(lyrics, positionMs, onSeek, Modifier.weight(1f).fillMaxWidth(), onSearch = actions?.let { a -> { a.findLyrics(track) } }, onRetry = { retry++ })
         }
     }
 }
 
 @Composable
-private fun LyricsCard(result: LyricsResult?, positionMs: Long, onSeek: (Long) -> Unit, modifier: Modifier, onSearch: (() -> Unit)?) {
+private fun LyricsCard(
+    result: LyricsResult?,
+    positionMs: Long,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier,
+    onSearch: (() -> Unit)?,
+    onRetry: () -> Unit,
+) {
     val found = (result as? LyricsResult.Found)?.lyrics
     Column(modifier.glass(RoundedCornerShape(12.dp), Neon.Card.copy(alpha = 0.6f)).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -206,7 +217,8 @@ private fun LyricsCard(result: LyricsResult?, positionMs: Long, onSeek: (Long) -
             when {
                 result == null -> CenteredNote(t(S.lyricsLoading))
                 result == LyricsResult.None -> CenteredNote(t(S.lyricsNone))
-                result == LyricsResult.Offline -> CenteredNote(t(S.lyricsOffline))
+                result is LyricsResult.Offline -> RetryNote(t(S.lyricsOffline) + (result.detail?.let { "\n($it)" } ?: ""), onRetry)
+                result is LyricsResult.ServerError -> RetryNote(t(S.lyricsServerError, result.code), onRetry)
                 found == null -> Unit
                 found.instrumental && !found.isSynced && found.plain.isNullOrBlank() -> CenteredNote(t(S.lyricsInstrumental))
                 found.isSynced -> SyncedLyrics(found, positionMs, onSeek)
@@ -228,6 +240,7 @@ private fun sourceLabel(source: LyricsSource): String = t(
     when (source) {
         LyricsSource.SIDECAR -> S.sourceSidecar
         LyricsSource.LRCLIB -> S.sourceLrclib
+        LyricsSource.LYRICS_OVH -> S.sourceLyricsOvh
         else -> S.sourceEmbedded
     },
 )
@@ -268,6 +281,15 @@ private fun SyncedLyrics(lyrics: Lyrics, positionMs: Long, onSeek: (Long) -> Uni
                     .padding(horizontal = 4.dp, vertical = 5.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun RetryNote(text: String, onRetry: () -> Unit) {
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text, color = Neon.Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        GhostButton(Icons.Rounded.Refresh, t(S.lyricsRetry), onRetry)
     }
 }
 
