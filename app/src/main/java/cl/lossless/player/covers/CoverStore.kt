@@ -13,7 +13,7 @@ data class CoverRef(val file: File, val stamp: Long)
  */
 class CoverStore(context: Context) {
 
-    private val dir = File(context.filesDir, "covers").apply { mkdirs() }
+    private val dir = File(context.filesDir, DIR).apply { mkdirs() }
 
     private fun fileFor(albumKey: String) = File(dir, sha1(albumKey) + ".img")
 
@@ -34,4 +34,9 @@ class CoverStore(context: Context) {
     private fun sha1(s: String): String =
         MessageDigest.getInstance("SHA-1").digest(s.toByteArray())
             .joinToString("") { "%02x".format(it) }
+
+    companion object {
+        /** Carpeta dentro de filesDir; [CoverProvider] la comparte con Android Auto. */
+        const val DIR = "covers"
+    }
 }

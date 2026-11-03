@@ -104,6 +104,8 @@ object S {
     val pause = Str("Pausa", "Pause", "Pause", "Pausar")
     val next = Str("Siguiente", "Next", "Suivant", "Próxima")
     val previous = Str("Anterior", "Previous", "Précédent", "Anterior")
+    val shuffleOff = Str("Aleatorio: no", "Shuffle: off", "Aléatoire : non", "Aleatório: não")
+    val shuffleOn = Str("Aleatorio: sí", "Shuffle: on", "Aléatoire : oui", "Aleatório: sim")
     val repeatOff = Str("Repetir: no", "Repeat: off", "Répéter : non", "Repetir: não")
     val repeatAll = Str("Repetir todo", "Repeat all", "Tout répéter", "Repetir tudo")
     val repeatOne = Str("Repetir una", "Repeat one", "Répéter un titre", "Repetir uma")
@@ -120,6 +122,14 @@ object S {
         "Impossible de joindre LRCLIB",
         "Sem conexão com o LRCLIB",
     )
+    val lyricsServerError = Str(
+        "LRCLIB no está respondiendo (saturado o caído, HTTP %1\$s). No es tu conexión; prueba más tarde.",
+        "LRCLIB isn't responding (overloaded or down, HTTP %1\$s). It's not your connection; try again later.",
+        "LRCLIB ne répond pas (surchargé ou en panne, HTTP %1\$s). Ce n'est pas votre connexion ; réessayez plus tard.",
+        "O LRCLIB não está respondendo (sobrecarregado ou fora do ar, HTTP %1\$s). Não é a sua conexão; tente mais tarde.",
+    )
+    val lyricsRetry = Str("Reintentar", "Retry", "Réessayer", "Tentar de novo")
+    val sourceLyricsOvh = Str("Lyrics.ovh", "Lyrics.ovh", "Lyrics.ovh", "Lyrics.ovh")
     val lyricsSource = Str("Fuente: %1\$s", "Source: %1\$s", "Source : %1\$s", "Fonte: %1\$s")
     val sourceSidecar = Str("archivo .lrc", ".lrc file", "fichier .lrc", "arquivo .lrc")
     val sourceEmbedded = Str("etiquetas del archivo", "file tags", "étiquettes du fichier", "tags do arquivo")

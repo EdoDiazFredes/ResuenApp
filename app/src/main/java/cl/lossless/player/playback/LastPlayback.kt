@@ -18,6 +18,8 @@ data class SavedEntry(
     val album: String? = null,
     val albumArtist: String? = null,
     val artworkUri: String? = null,
+    /** Calidad del archivo (ver [cl.lossless.player.library.Track.qualityDetails]). */
+    val description: String? = null,
 )
 
 /** Cola y posición de la última reproducción. */
@@ -44,6 +46,7 @@ object LastPlaybackJson {
                     .putOpt("album", e.album)
                     .putOpt("albumArtist", e.albumArtist)
                     .putOpt("art", e.artworkUri)
+                    .putOpt("desc", e.description)
             )
         }
         return JSONObject().put("v", 1).put("queue", array).toString()
@@ -62,6 +65,7 @@ object LastPlaybackJson {
                 album = o.str("album"),
                 albumArtist = o.str("albumArtist"),
                 artworkUri = o.str("art"),
+                description = o.str("desc"),
             )
         }
     }
@@ -129,6 +133,7 @@ fun MediaItem.toSavedEntry(): SavedEntry = SavedEntry(
     album = mediaMetadata.albumTitle?.toString(),
     albumArtist = mediaMetadata.albumArtist?.toString(),
     artworkUri = mediaMetadata.artworkUri?.toString(),
+    description = mediaMetadata.description?.toString(),
 )
 
 fun SavedEntry.toMediaItem(): MediaItem = MediaItem.Builder()
@@ -142,6 +147,7 @@ fun SavedEntry.toMediaItem(): MediaItem = MediaItem.Builder()
             .setAlbumTitle(album)
             .setAlbumArtist(albumArtist)
             .setArtworkUri(artworkUri?.let(Uri::parse))
+            .setDescription(description)
             .build()
     )
     .build()

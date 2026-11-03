@@ -17,6 +17,7 @@ class LastPlaybackJsonTest {
                 album = "Álbum",
                 albumArtist = "Artista",
                 artworkUri = "content://cl.lossless.player.covers/a.jpg",
+                description = "FLAC • 24-bit • 96 kHz",
             ),
             SavedEntry(mediaId = "content://media/external/audio/media/13"),
         )

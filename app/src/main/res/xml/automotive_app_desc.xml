@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Declara la app como app multimedia para Android Auto (ver AndroidManifest.xml). -->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>

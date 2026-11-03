@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos del Setup.exe (tema Noche, thm.xml). Mismas claves en los cuatro idiomas. -->
+<WixLocalization Culture="pt-br" Language="1046" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">Instalação do [WixBundleName]</String>
+  <String Id="InstallHeader">Boas-vindas</String>
+  <String Id="InstallMessage">O [WixBundleName], seu player de música sem perdas, será instalado neste computador. Clique em Instalar para continuar.</String>
+  <String Id="InstallVersion">Versão [ResuenAppVersion]</String>
+  <String Id="ConfirmCancelMessage">Tem certeza de que deseja cancelar?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">Versão anterior</String>
+  <String Id="HelpHeader">Ajuda da instalação</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [pasta] - instala, repara, desinstala
+   ou copia o instalador completo para uma pasta. Instalar é o padrão.
+
+/passive | /quiet - janela mínima sem perguntas, ou nenhuma janela.
+
+/norestart - nunca reinicia o computador.
+/log log.txt - grava o registro nesse arquivo. Por padrão vai para %TEMP%.</String>
+  <String Id="HelpCloseButton">&amp;Fechar</String>
+  <String Id="InstallInstallButton">&amp;Instalar</String>
+  <String Id="InstallCloseButton">&amp;Fechar</String>
+  <String Id="ProgressHeader">Um momento, por favor</String>
+  <String Id="OverallProgressPackageText">Preparando...</String>
+  <String Id="ProgressCancelButton">&amp;Cancelar</String>
+  <String Id="ModifyHeader">O [WixBundleName] já está instalado</String>
+  <String Id="ModifyMessage">Você pode repará-lo se algo não estiver funcionando, ou desinstalá-lo.</String>
+  <String Id="ModifyRepairButton">&amp;Reparar</String>
+  <String Id="ModifyUninstallButton">&amp;Desinstalar</String>
+  <String Id="ModifyCloseButton">&amp;Fechar</String>
+  <String Id="SuccessHeader">Pronto</String>
+  <String Id="SuccessInstallHeader">Instalação concluída</String>
+  <String Id="SuccessRepairHeader">Reparo concluído</String>
+  <String Id="SuccessUninstallHeader">Desinstalação concluída</String>
+  <String Id="SuccessLaunchButton">&amp;Abrir</String>
+  <String Id="SuccessRestartText">Reinicie o computador para terminar.</String>
+  <String Id="SuccessRestartButton">&amp;Reiniciar</String>
+  <String Id="SuccessCloseButton">&amp;Fechar</String>
+  <String Id="FailureHeader">A instalação falhou</String>
+  <String Id="FailureInstallHeader">A instalação falhou</String>
+  <String Id="FailureUninstallHeader">A desinstalação falhou</String>
+  <String Id="FailureRepairHeader">O reparo falhou</String>
+  <String Id="FailureHyperlinkLogText">Algo impediu a conclusão da instalação. Corrija o problema e tente de novo. Os detalhes estão no &lt;a href="#"&gt;registro&lt;/a&gt;.</String>
+  <String Id="FailureRestartText">Reinicie o computador para terminar de desfazer as alterações.</String>
+  <String Id="FailureRestartButton">&amp;Reiniciar</String>
+  <String Id="FailureCloseButton">&amp;Fechar</String>
+  <String Id="ErrorFailNoActionReboot">Nada foi feito porque o computador precisa ser reiniciado primeiro.</String>
+</WixLocalization>

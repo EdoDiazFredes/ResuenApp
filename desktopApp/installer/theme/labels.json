@@ -1,0 +1,6 @@
+{
+  "en": { "install": "Install", "repair": "Repair", "launch": "Open", "restart": "Restart", "close": "Close", "cancel": "Cancel", "uninstall": "Uninstall" },
+  "es": { "install": "Instalar", "repair": "Reparar", "launch": "Abrir", "restart": "Reiniciar", "close": "Cerrar", "cancel": "Cancelar", "uninstall": "Desinstalar" },
+  "fr": { "install": "Installer", "repair": "Réparer", "launch": "Ouvrir", "restart": "Redémarrer", "close": "Fermer", "cancel": "Annuler", "uninstall": "Désinstaller" },
+  "pt": { "install": "Instalar", "repair": "Reparar", "launch": "Abrir", "restart": "Reiniciar", "close": "Fechar", "cancel": "Cancelar", "uninstall": "Desinstalar" }
+}

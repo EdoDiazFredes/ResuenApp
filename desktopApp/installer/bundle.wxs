@@ -3,6 +3,9 @@
   Instalador ResuenApp-Setup.exe: envuelve el .msi en un "bundle" de WiX (Burn). El asistente
   de un .msi solo siempre muestra el ícono genérico de Windows Installer en la barra de título;
   el del bundle muestra el ícono y el logo de ResuenApp.
+  Aspecto: tema Noche de la app (theme/thm.xml), en español, inglés, francés y portugués. Burn
+  elige la carpeta con el código del idioma de Windows (1034 = cualquier español, 1036 = francés,
+  1046 = portugués) y si no hay, usa la raíz (inglés).
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
@@ -14,10 +17,24 @@
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense">
       <bal:WixStandardBootstrapperApplication
           LicenseUrl=""
-          LogoFile="$(var.InstallerDir)\logo.png"
+          ThemeFile="$(var.InstallerDir)\theme\thm.xml"
+          LocalizationFile="$(var.InstallerDir)\theme\strings\en.wxl"
           SuppressOptionsUI="yes"
+          ShowVersion="yes"
           LaunchTarget="[LocalAppDataFolder]ResuenApp\ResuenApp.exe" />
+      <Payload Id="SpriteEn" Name="sprite.png" SourceFile="$(var.InstallerDir)\theme\sprites\en.png" Compressed="yes" />
+      <Payload Id="ThemeEs" Name="1034\thm.xml" SourceFile="$(var.InstallerDir)\theme\thm.xml" Compressed="yes" />
+      <Payload Id="StringsEs" Name="1034\thm.wxl" SourceFile="$(var.InstallerDir)\theme\strings\es.wxl" Compressed="yes" />
+      <Payload Id="SpriteEs" Name="1034\sprite.png" SourceFile="$(var.InstallerDir)\theme\sprites\es.png" Compressed="yes" />
+      <Payload Id="ThemeFr" Name="1036\thm.xml" SourceFile="$(var.InstallerDir)\theme\thm.xml" Compressed="yes" />
+      <Payload Id="StringsFr" Name="1036\thm.wxl" SourceFile="$(var.InstallerDir)\theme\strings\fr.wxl" Compressed="yes" />
+      <Payload Id="SpriteFr" Name="1036\sprite.png" SourceFile="$(var.InstallerDir)\theme\sprites\fr.png" Compressed="yes" />
+      <Payload Id="ThemePt" Name="1046\thm.xml" SourceFile="$(var.InstallerDir)\theme\thm.xml" Compressed="yes" />
+      <Payload Id="StringsPt" Name="1046\thm.wxl" SourceFile="$(var.InstallerDir)\theme\strings\pt.wxl" Compressed="yes" />
+      <Payload Id="SpritePt" Name="1046\sprite.png" SourceFile="$(var.InstallerDir)\theme\sprites\pt.png" Compressed="yes" />
     </BootstrapperApplicationRef>
+    <!-- Versión para mostrar: WixBundleVersion siempre lleva cuatro números (1.2.80.0). -->
+    <Variable Name="ResuenAppVersion" Value="$(var.Version)" />
     <Chain>
       <MsiPackage SourceFile="$(var.Msi)" Compressed="yes" />
     </Chain>

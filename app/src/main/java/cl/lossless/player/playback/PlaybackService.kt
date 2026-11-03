@@ -21,17 +21,26 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaLibraryService.LibraryParams
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionError
+import cl.lossless.player.covers.CoverProvider
+import cl.lossless.player.playback.auto.AutoLibrary
+import cl.lossless.player.playback.auto.AutoMediaIds
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import java.util.concurrent.Executors
 
 @OptIn(UnstableApi::class)
-class PlaybackService : MediaSessionService() {
+class PlaybackService : MediaLibraryService() {
 
-    private var session: MediaSession? = null
+    private var session: MediaLibrarySession? = null
     private lateinit var bitPerfect: BitPerfectController
     private lateinit var playbackPrefs: PlaybackPrefs
     private lateinit var lastPlayback: LastPlaybackStore
@@ -47,11 +56,17 @@ class PlaybackService : MediaSessionService() {
     private val io: ListeningExecutorService =
         MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
 
+    /** Lectura de la biblioteca para Android Auto, aparte para no demorar la reproducción. */
+    private val libraryExecutor: ListeningExecutorService =
+        MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
+    private lateinit var autoLibrary: AutoLibrary
+
     override fun onCreate() {
         super.onCreate()
         bitPerfect = BitPerfectController(this)
         playbackPrefs = PlaybackPrefs(this)
         lastPlayback = LastPlaybackStore(this)
+        autoLibrary = AutoLibrary(this)
 
         val player = ExoPlayer.Builder(this, LosslessRenderersFactory(this))
             .setAudioAttributes(
@@ -104,8 +119,7 @@ class PlaybackService : MediaSessionService() {
                 .apply { setSmallIcon(R.drawable.ic_stat_resuen) }
         )
 
-        session = MediaSession.Builder(this, player)
-            .setCallback(SessionCallback())
+        session = MediaLibrarySession.Builder(this, player, SessionCallback())
             // Tocar la notificación (o el reproductor de la pantalla de bloqueo) abre la app
             // directamente en "Reproduciendo".
             .setSessionActivity(
@@ -133,7 +147,7 @@ class PlaybackService : MediaSessionService() {
     private fun restoreLastPlayback(player: Player) {
         io.execute {
             val saved = lastPlayback.load() ?: return@execute
-            val items = saved.entries.map { it.toMediaItem() }
+            val items = saved.entries.map { resolveItem(it.toMediaItem()) }
             // Configurar la salida ANTES de que ExoPlayer cree el AudioTrack.
             prepareOutputFor(items[saved.index])
             main.post {
@@ -179,7 +193,7 @@ class PlaybackService : MediaSessionService() {
         bitPerfect.apply(spec)
     }
 
-    private inner class SessionCallback : MediaSession.Callback {
+    private inner class SessionCallback : MediaLibrarySession.Callback {
         /**
          * Botones de audífonos y controles Bluetooth. Los gestos táctiles de los audífonos
          * (Sony, Sennheiser, Jabra…) los traduce el propio audífono a estas teclas estándar:
@@ -210,15 +224,28 @@ class PlaybackService : MediaSessionService() {
 
 
         // El MediaController no envía la URI al servicio: se reconstruye desde mediaId.
-        private fun resolve(items: List<MediaItem>) =
-            items.map { it.buildUpon().setUri(it.mediaId).build() }
+        private fun resolve(items: List<MediaItem>) = items.map(::resolveItem)
+
+        /** Elementos que vienen del árbol de Android Auto (o de una orden de voz). */
+        private fun needsLibrary(item: MediaItem) =
+            item.mediaId == AutoMediaIds.SHUFFLE_ALL || AutoMediaIds.parseTrack(item.mediaId) != null ||
+                (item.mediaId.isEmpty() && item.requestMetadata.searchQuery != null)
 
         override fun onAddMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>,
         ): ListenableFuture<MutableList<MediaItem>> =
-            io.submit<MutableList<MediaItem>> { resolve(mediaItems).toMutableList() }
+            if (mediaItems.none(::needsLibrary)) io.submit<MutableList<MediaItem>> { resolve(mediaItems).toMutableList() }
+            else libraryExecutor.submit<MutableList<MediaItem>> {
+                mediaItems.flatMap { item ->
+                    when {
+                        AutoMediaIds.parseTrack(item.mediaId) != null -> listOfNotNull(autoLibrary.resolveSingle(item.mediaId))
+                        needsLibrary(item) -> fromAuto(item).first
+                        else -> listOf(resolveItem(item))
+                    }
+                }.toMutableList()
+            }
 
         override fun onSetMediaItems(
             mediaSession: MediaSession,
@@ -226,14 +253,148 @@ class PlaybackService : MediaSessionService() {
             mediaItems: MutableList<MediaItem>,
             startIndex: Int,
             startPositionMs: Long,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val index = if (startIndex == C.INDEX_UNSET) 0 else startIndex
+            val resolved: ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+                if (mediaItems.size == 1 && needsLibrary(mediaItems[0])) {
+                    // Una pista elegida en el auto: suena su álbum/playlist/carpeta desde ella.
+                    libraryExecutor.submit<MediaSession.MediaItemsWithStartPosition> {
+                        val (items, start) = fromAuto(mediaItems[0])
+                        MediaSession.MediaItemsWithStartPosition(items, start, startPositionMs)
+                    }
+                } else if (mediaItems.any(::needsLibrary)) {
+                    libraryExecutor.submit<MediaSession.MediaItemsWithStartPosition> {
+                        val items = mediaItems.map { autoLibrary.resolveSingle(it.mediaId) ?: resolveItem(it) }
+                        MediaSession.MediaItemsWithStartPosition(items, index, startPositionMs)
+                    }
+                } else {
+                    Futures.immediateFuture(
+                        MediaSession.MediaItemsWithStartPosition(resolve(mediaItems), index, startPositionMs)
+                    )
+                }
+            // Configurar la salida ANTES de que ExoPlayer cree el AudioTrack.
+            return Futures.transform(resolved, { result ->
+                result.mediaItems.getOrNull(result.startIndex)?.let { prepareOutputFor(it) }
+                result
+            }, io)
+        }
+
+        /** Cola e índice inicial para algo elegido en el auto o pedido por voz. */
+        private fun fromAuto(item: MediaItem): Pair<List<MediaItem>, Int> {
+            val query = item.requestMetadata.searchQuery
+            if (item.mediaId.isEmpty() && query != null) {
+                // "Reproduce X en ResuenApp"; sin nada concreto, toda la biblioteca en aleatorio.
+                if (query.isNotBlank()) {
+                    val found = autoLibrary.search(query)
+                    if (found.isNotEmpty()) return found.map(autoLibrary::playbackItem) to 0
+                }
+                return fromAuto(MediaItem.Builder().setMediaId(AutoMediaIds.SHUFFLE_ALL).build())
+            }
+            val queue = autoLibrary.resolveQueue(item.mediaId)
+                ?: throw IllegalArgumentException("Elemento desconocido: ${item.mediaId}")
+            if (item.mediaId == AutoMediaIds.SHUFFLE_ALL) main.post { session?.player?.shuffleModeEnabled = true }
+            return queue
+        }
+
+        /** Android Auto (o el sistema) pide retomar lo último que sonó sin abrir la app. */
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
             io.submit<MediaSession.MediaItemsWithStartPosition> {
-                val resolved = resolve(mediaItems)
-                val index = if (startIndex == C.INDEX_UNSET) 0 else startIndex
-                // Configurar la salida ANTES de que ExoPlayer cree el AudioTrack.
-                resolved.getOrNull(index)?.let { prepareOutputFor(it) }
-                MediaSession.MediaItemsWithStartPosition(resolved, index, startPositionMs)
+                val saved = lastPlayback.load() ?: throw IllegalStateException("No hay reproducción guardada")
+                val items = saved.entries.map { resolveItem(it.toMediaItem()) }
+                prepareOutputFor(items[saved.index])
+                main.post {
+                    mediaSession.player.shuffleModeEnabled = saved.shuffle
+                    mediaSession.player.repeatMode = saved.repeatMode
+                }
+                MediaSession.MediaItemsWithStartPosition(items, saved.index, saved.positionMs)
             }
+
+        // ---------- Navegación de Android Auto ----------
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            // La raíz de "recientes" (tarjeta de reanudar del sistema) usa onPlaybackResumption.
+            if (params?.isRecent == true) {
+                return Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_NOT_SUPPORTED))
+            }
+            return libraryExecutor.submit<LibraryResult<MediaItem>> {
+                // Cada vez que el auto se conecta se relee la biblioteca (si no es muy reciente).
+                autoLibrary.refresh(maxAgeMs = LIBRARY_MAX_AGE_MS)
+                LibraryResult.ofItem(
+                    autoLibrary.root(),
+                    LibraryParams.Builder().setExtras(autoLibrary.rootExtras()).build(),
+                )
+            }
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+            libraryExecutor.submit<LibraryResult<ImmutableList<MediaItem>>> {
+                val children = autoLibrary.children(parentId)
+                    ?: return@submit LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                LibraryResult.ofItemList(AutoMediaIds.page(children, page, pageSize), params)
+            }
+
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            mediaId: String,
+        ): ListenableFuture<LibraryResult<MediaItem>> =
+            libraryExecutor.submit<LibraryResult<MediaItem>> {
+                autoLibrary.item(mediaId)?.let { LibraryResult.ofItem(it, null) }
+                    ?: LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+            }
+
+        override fun onSearch(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            query: String,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<Void>> =
+            libraryExecutor.submit<LibraryResult<Void>> {
+                val count = autoLibrary.search(query).size
+                main.post { session.notifySearchResultChanged(browser, query, count, params) }
+                LibraryResult.ofVoid()
+            }
+
+        override fun onGetSearchResult(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            query: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+            libraryExecutor.submit<LibraryResult<ImmutableList<MediaItem>>> {
+                LibraryResult.ofItemList(AutoMediaIds.page(autoLibrary.searchResults(query), page, pageSize), params)
+            }
+    }
+
+    /**
+     * Reconstruye la URI desde mediaId y entrega la carátula como content://, que Android Auto
+     * (otro proceso) sí puede abrir; file:// solo lo lee la propia app.
+     */
+    private fun resolveItem(item: MediaItem): MediaItem {
+        val artwork = item.mediaMetadata.artworkUri
+        val shared = CoverProvider.publicUri(this, artwork)
+        return item.buildUpon()
+            .setUri(item.mediaId)
+            .apply {
+                if (shared != artwork) setMediaMetadata(item.mediaMetadata.buildUpon().setArtworkUri(shared).build())
+            }
+            .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
@@ -255,10 +416,13 @@ class PlaybackService : MediaSessionService() {
         bitPerfect.release()
         // Deja terminar la escritura de la cola que esté pendiente.
         io.shutdown()
+        libraryExecutor.shutdownNow()
         super.onDestroy()
     }
 
     private companion object {
         const val POSITION_SAVE_INTERVAL_MS = 5_000L
+        /** Android Auto relee la biblioteca al conectarse si la copia tiene más de esto. */
+        const val LIBRARY_MAX_AGE_MS = 30_000L
     }
 }

@@ -181,7 +181,10 @@ fun WindowScope.MiniPlayer(player: Player, pinned: Boolean, onPin: () -> Unit, o
                 }
                 SmallIconButton(Icons.Rounded.SkipNext, t(S.next), tint = Neon.Text, size = 28.dp) { if (track != null) player.next() }
             }
-            Box(Modifier.align(Alignment.CenterStart)) { RepeatButton(player, size = 18.dp) }
+            Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
+                ShuffleButton(player, size = 18.dp)
+                RepeatButton(player, size = 18.dp)
+            }
             Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
                 SmallIconButton(
                     if (volume <= 0.001f) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,

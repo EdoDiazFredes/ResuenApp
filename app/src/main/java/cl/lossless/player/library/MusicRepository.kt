@@ -74,6 +74,8 @@ data class Track(
                 .setAlbumTitle(album)
                 .setAlbumArtist(albumArtist)
                 .setArtworkUri(artworkUri)
+                // Calidad del archivo ("FLAC • 24-bit • 96 kHz"); Android Auto la muestra bajo el artista.
+                .setDescription(qualityDetails.ifEmpty { null })
                 .build()
         )
         .build()

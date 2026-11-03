@@ -36,10 +36,24 @@
             android:name=".playback.PlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
+            <!-- MediaLibraryService: Android Auto recorre la biblioteca a través de este servicio. -->
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Carátulas de solo lectura para Android Auto, que no puede abrir archivos de la app. -->
+        <provider
+            android:name=".covers.CoverProvider"
+            android:authorities="${applicationId}.covers"
+            android:exported="true" />
+
+        <!-- Android Auto: la app aparece como reproductor de música en el auto. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

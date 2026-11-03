@@ -141,6 +141,10 @@ object AppSettings {
         get() = RepeatMode.entries.firstOrNull { it.name == prefs.get("repeat", null) } ?: RepeatMode.OFF
         set(value) = prefs.put("repeat", value.name)
 
+    var shuffle: Boolean
+        get() = prefs.getBoolean("shuffle", false)
+        set(value) = prefs.putBoolean("shuffle", value)
+
     // Apariencia: nombres de ThemeMode, Accent, AppFont y TextSize (ver ui/Theme.kt).
     var theme: String?
         get() = prefs.get("theme", null)

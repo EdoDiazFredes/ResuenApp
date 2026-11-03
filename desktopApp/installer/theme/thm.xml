@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tema Noche del Setup.exe (WiX 3, WixStandardBootstrapperApplication).
+  Ventana sin marco de Windows: el fondo, los botones y la barra de progreso se recortan de
+  sprite.png (sprites/<idioma>.png, hecho por generate.mjs) con SourceX/SourceY. Si se cambia una
+  medida aquí, hay que cambiarla también en generate.mjs.
+  Los textos vienen de thm.wxl (strings/<idioma>.wxl). Hay un thm.xml + thm.wxl + sprite.png por
+  idioma, en carpetas con el código de idioma de Windows (ver bundle.wxs).
+  Colores en formato de Windows: BBGGRR (al revés que en CSS).
+    140D0A = #0A0D14 fondo    1B120E = #0E121B franja inferior
+    FFFFFF = texto fuerte     F0E8E2 = #E2E8F0 texto    B8A394 = #94A3B8 tenue    8B7464 = #64748B muy tenue
+    A9C722 = #22C7A9 turquesa neón
+-->
+<Theme xmlns="http://wixtoolset.org/schemas/thmutil/2010" ImageFile="sprite.png">
+    <Window Width="540" Height="340" FontId="0" SourceX="0" SourceY="0">#(loc.Caption)</Window>
+
+    <!-- La fuente 0 es la de la ventana: sin Background, para que Windows no pinte encima del fondo de sprite.png. -->
+    <Font Id="0" Height="-13" Weight="400" Foreground="F0E8E2">Segoe UI</Font>
+    <Font Id="1" Height="-24" Weight="600" Foreground="FFFFFF" Background="140D0A">Segoe UI</Font>
+    <Font Id="2" Height="-14" Weight="400" Foreground="B8A394" Background="140D0A">Segoe UI</Font>
+    <Font Id="3" Height="-12" Weight="400" Foreground="8B7464" Background="1B120E">Segoe UI</Font>
+    <Font Id="4" Height="-14" Weight="600" Foreground="A9C722" Background="140D0A">Segoe UI</Font>
+    <Font Id="5" Height="-12" Weight="400" Foreground="B8A394" Background="140D0A">Consolas</Font>
+
+    <!-- Cerrar (la ventana no tiene barra de título; se arrastra desde cualquier parte). WixStdBA 3.11
+         no atiende un botón de minimizar, por eso no hay. -->
+    <Button Name="CloseButton" X="-1" Y="1" Width="44" Height="30" SourceX="0" SourceY="436" TabStop="no" FontId="0" Visible="yes">x</Button>
+
+    <Page Name="Help">
+        <Text X="24" Y="96" Width="-24" Height="34" FontId="1" DisablePrefix="yes">#(loc.HelpHeader)</Text>
+        <Text X="24" Y="134" Width="-24" Height="-76" FontId="5" DisablePrefix="yes">#(loc.HelpText)</Text>
+        <Button Name="HelpCancelButton" X="-24" Y="-18" Width="112" Height="32" SourceX="448" SourceY="340" TabStop="yes" FontId="0">#(loc.HelpCloseButton)</Button>
+    </Page>
+
+    <Page Name="Install">
+        <Text X="24" Y="100" Width="-24" Height="34" FontId="1" DisablePrefix="yes">#(loc.InstallHeader)</Text>
+        <Text X="24" Y="142" Width="-24" Height="80" FontId="2" DisablePrefix="yes">#(loc.InstallMessage)</Text>
+        <Text Name="InstallVersion" X="24" Y="-25" Width="250" Height="18" FontId="3" DisablePrefix="yes" HideWhenDisabled="yes">#(loc.InstallVersion)</Text>
+        <Button Name="InstallButton" X="-144" Y="-18" Width="112" Height="32" SourceX="0" SourceY="340" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
+        <Button Name="WelcomeCancelButton" X="-24" Y="-18" Width="112" Height="32" SourceX="448" SourceY="340" TabStop="yes" FontId="0">#(loc.InstallCloseButton)</Button>
+    </Page>
+
+    <Page Name="Progress">
+        <Text X="24" Y="100" Width="-24" Height="34" FontId="1" DisablePrefix="yes">#(loc.ProgressHeader)</Text>
+        <Text Name="OverallProgressPackageText" X="24" Y="150" Width="-110" Height="20" FontId="2" DisablePrefix="yes">#(loc.OverallProgressPackageText)</Text>
+        <Text Name="OverallProgressText" X="-24" Y="150" Width="80" Height="20" FontId="4" DisablePrefix="yes" HexStyle="2"></Text>
+        <!-- Barra y porcentaje leen el mismo avance (OnProgress); la "Calculated" usa otra cuenta y no calzaba. -->
+        <Progressbar Name="OverallProgressbar" X="24" Y="180" Width="-24" Height="6" SourceX="44" SourceY="436" />
+        <Button Name="ProgressCancelButton" X="-24" Y="-18" Width="112" Height="32" SourceX="560" SourceY="340" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.ProgressCancelButton)</Button>
+    </Page>
+
+    <Page Name="Modify">
+        <Text X="24" Y="100" Width="-24" Height="34" FontId="1" DisablePrefix="yes">#(loc.ModifyHeader)</Text>
+        <Text X="24" Y="142" Width="-24" Height="80" FontId="2" DisablePrefix="yes">#(loc.ModifyMessage)</Text>
+        <Button Name="RepairButton" X="-264" Y="-18" Width="112" Height="32" SourceX="112" SourceY="340" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.ModifyRepairButton)</Button>
+        <Button Name="UninstallButton" X="-144" Y="-18" Width="112" Height="32" SourceX="672" SourceY="340" TabStop="yes" FontId="0">#(loc.ModifyUninstallButton)</Button>
+        <Button Name="ModifyCancelButton" X="-24" Y="-18" Width="112" Height="32" SourceX="448" SourceY="340" TabStop="yes" FontId="0">#(loc.ModifyCloseButton)</Button>
+    </Page>
+
+    <Page Name="Success">
+        <Text Name="SuccessHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessHeader)</Text>
+        <Text Name="SuccessInstallHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessInstallHeader)</Text>
+        <Text Name="SuccessRepairHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessRepairHeader)</Text>
+        <Text Name="SuccessUninstallHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessUninstallHeader)</Text>
+        <Text Name="SuccessRestartText" X="24" Y="142" Width="-24" Height="40" FontId="2" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.SuccessRestartText)</Text>
+        <Button Name="LaunchButton" X="-144" Y="-18" Width="112" Height="32" SourceX="224" SourceY="340" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.SuccessLaunchButton)</Button>
+        <Button Name="SuccessRestartButton" X="-144" Y="-18" Width="112" Height="32" SourceX="336" SourceY="340" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.SuccessRestartButton)</Button>
+        <Button Name="SuccessCancelButton" X="-24" Y="-18" Width="112" Height="32" SourceX="448" SourceY="340" TabStop="yes" FontId="0">#(loc.SuccessCloseButton)</Button>
+    </Page>
+
+    <Page Name="Failure">
+        <Text Name="FailureHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.FailureHeader)</Text>
+        <Text Name="FailureInstallHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.FailureInstallHeader)</Text>
+        <Text Name="FailureUninstallHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.FailureUninstallHeader)</Text>
+        <Text Name="FailureRepairHeader" X="24" Y="100" Width="-24" Height="34" FontId="1" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.FailureRepairHeader)</Text>
+        <Hypertext Name="FailureLogFileLink" X="24" Y="142" Width="-24" Height="40" FontId="2" TabStop="yes" HideWhenDisabled="yes">#(loc.FailureHyperlinkLogText)</Hypertext>
+        <Hypertext Name="FailureMessageText" X="24" Y="186" Width="-24" Height="40" FontId="2" TabStop="yes" HideWhenDisabled="yes" />
+        <Text Name="FailureRestartText" X="24" Y="230" Width="-24" Height="36" FontId="2" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.FailureRestartText)</Text>
+        <Button Name="FailureRestartButton" X="-144" Y="-18" Width="112" Height="32" SourceX="336" SourceY="340" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.FailureRestartButton)</Button>
+        <Button Name="FailureCloseButton" X="-24" Y="-18" Width="112" Height="32" SourceX="448" SourceY="340" TabStop="yes" FontId="0">#(loc.FailureCloseButton)</Button>
+    </Page>
+</Theme>

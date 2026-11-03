@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos del árbol de navegación de Android Auto (PlaybackService / AutoLibrary). -->
+<resources>
+    <string name="auto_artists">Artistes</string>
+    <string name="auto_all_tracks">Toutes les pistes</string>
+    <string name="auto_shuffle_all">Tout en aléatoire</string>
+</resources>

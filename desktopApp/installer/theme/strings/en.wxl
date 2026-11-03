@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos del Setup.exe (tema Noche, thm.xml). Mismas claves en los cuatro idiomas. -->
+<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">[WixBundleName] Setup</String>
+  <String Id="InstallHeader">Welcome</String>
+  <String Id="InstallMessage">Setup will install [WixBundleName], your lossless music player, on this computer. Click Install to continue.</String>
+  <String Id="InstallVersion">Version [ResuenAppVersion]</String>
+  <String Id="ConfirmCancelMessage">Are you sure you want to cancel?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">Previous version</String>
+  <String Id="HelpHeader">Setup help</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [folder] - installs, repairs, uninstalls
+   or copies the whole installer to a folder. Install is the default.
+
+/passive | /quiet - minimal window without questions, or no window at all.
+
+/norestart - never restart the computer.
+/log log.txt - log to this file. By default the log goes to %TEMP%.</String>
+  <String Id="HelpCloseButton">&amp;Close</String>
+  <String Id="InstallInstallButton">&amp;Install</String>
+  <String Id="InstallCloseButton">&amp;Close</String>
+  <String Id="ProgressHeader">One moment, please</String>
+  <String Id="OverallProgressPackageText">Getting ready...</String>
+  <String Id="ProgressCancelButton">&amp;Cancel</String>
+  <String Id="ModifyHeader">[WixBundleName] is already installed</String>
+  <String Id="ModifyMessage">You can repair it if something is not working, or uninstall it.</String>
+  <String Id="ModifyRepairButton">&amp;Repair</String>
+  <String Id="ModifyUninstallButton">&amp;Uninstall</String>
+  <String Id="ModifyCloseButton">&amp;Close</String>
+  <String Id="SuccessHeader">Done</String>
+  <String Id="SuccessInstallHeader">Installation complete</String>
+  <String Id="SuccessRepairHeader">Repair complete</String>
+  <String Id="SuccessUninstallHeader">Uninstall complete</String>
+  <String Id="SuccessLaunchButton">&amp;Open</String>
+  <String Id="SuccessRestartText">Restart the computer to finish.</String>
+  <String Id="SuccessRestartButton">&amp;Restart</String>
+  <String Id="SuccessCloseButton">&amp;Close</String>
+  <String Id="FailureHeader">Setup failed</String>
+  <String Id="FailureInstallHeader">Setup failed</String>
+  <String Id="FailureUninstallHeader">Uninstall failed</String>
+  <String Id="FailureRepairHeader">Repair failed</String>
+  <String Id="FailureHyperlinkLogText">Something stopped setup from finishing. Fix the problem and try again. Details are in the &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
+  <String Id="FailureRestartText">Restart the computer to finish undoing the changes.</String>
+  <String Id="FailureRestartButton">&amp;Restart</String>
+  <String Id="FailureCloseButton">&amp;Close</String>
+  <String Id="ErrorFailNoActionReboot">Nothing was done because the computer needs to restart first.</String>
+</WixLocalization>

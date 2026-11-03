@@ -26,6 +26,12 @@ enum class RepeatMode {
     val next: RepeatMode get() = entries[(ordinal + 1) % entries.size]
 }
 
+/** Permutación aleatoria de 0 until [size] que empieza por [first] (si es un índice válido). */
+internal fun shuffledOrder(size: Int, first: Int): List<Int> {
+    val rest = (0 until size).filter { it != first }.shuffled()
+    return if (first in 0 until size) listOf(first) + rest else rest
+}
+
 data class PlayerState(
     val queue: List<Track> = emptyList(),
     val index: Int = -1,
@@ -66,10 +72,51 @@ class Player {
         AppSettings.repeat = mode
     }
 
+    private val _shuffle = MutableStateFlow(AppSettings.shuffle)
+    /** Aleatorio: la cola se muestra en su orden, pero se recorre según [order]. */
+    val shuffle: StateFlow<Boolean> = _shuffle.asStateFlow()
+
+    /** Orden de reproducción en aleatorio (índices de la cola); vacío si está apagado. */
+    @Volatile private var order: List<Int> = emptyList()
+
+    fun toggleShuffle() {
+        val on = !_shuffle.value
+        _shuffle.value = on
+        AppSettings.shuffle = on
+        rebuildOrder()
+    }
+
     fun playQueue(tracks: List<Track>, start: Int) {
         if (tracks.isEmpty()) return
         _state.update { it.copy(queue = tracks, index = start.coerceIn(tracks.indices), error = null) }
+        rebuildOrder()
         startCurrent()
+    }
+
+    /** Baraja la cola dejando la canción actual primero, así lo que suena no se interrumpe. */
+    private fun rebuildOrder() {
+        val st = _state.value
+        order = if (!_shuffle.value || st.queue.isEmpty()) emptyList()
+        else shuffledOrder(st.queue.size, st.index)
+    }
+
+    /**
+     * Índice de la cola a [step] posiciones de la actual (en el orden aleatorio si está activo),
+     * o -1 si no hay. Con [wrap] da la vuelta: tras la última vuelve a la primera.
+     */
+    private fun neighbor(step: Int, wrap: Boolean): Int {
+        val st = _state.value
+        val n = st.queue.size
+        if (n == 0) return -1
+        val seq = order.takeIf { _shuffle.value && it.size == n }
+        val pos = seq?.indexOf(st.index) ?: st.index
+        val target = pos + step
+        val i = when {
+            target in 0 until n -> target
+            wrap -> Math.floorMod(target, n)
+            else -> return -1
+        }
+        return seq?.get(i) ?: i
     }
 
     fun toggle() {
@@ -84,22 +131,18 @@ class Player {
 
     /** Siguiente a mano: con "repetir todo" vuelve a la primera tras la última. */
     fun next() {
-        val st = _state.value
-        val target = when {
-            st.index + 1 < st.queue.size -> st.index + 1
-            _repeat.value == RepeatMode.ALL && st.queue.isNotEmpty() -> 0
-            else -> return
-        }
+        val target = neighbor(1, wrap = _repeat.value == RepeatMode.ALL)
+        if (target < 0) return
         _state.update { it.copy(index = target, error = null) }
         startCurrent()
     }
 
     fun previous() {
-        val st = _state.value
-        if (positionMs() > 3_000 || st.index == 0) {
+        val target = neighbor(-1, wrap = false)
+        if (positionMs() > 3_000 || target < 0) {
             seek(0)
-        } else if (st.index > 0) {
-            _state.update { it.copy(index = it.index - 1, error = null) }
+        } else {
+            _state.update { it.copy(index = target, error = null) }
             startCurrent()
         }
     }
@@ -187,12 +230,9 @@ class Player {
 
     private fun onEnded(s: Session) {
         if (session !== s) return
-        val st = _state.value
-        val target = when {
-            _repeat.value == RepeatMode.ONE -> st.index
-            st.index + 1 < st.queue.size -> st.index + 1
-            _repeat.value == RepeatMode.ALL && st.queue.isNotEmpty() -> 0
-            else -> -1
+        val target = when (_repeat.value) {
+            RepeatMode.ONE -> _state.value.index
+            else -> neighbor(1, wrap = _repeat.value == RepeatMode.ALL)
         }
         if (target >= 0) {
             _state.update { it.copy(index = target) }
