@@ -238,6 +238,12 @@ object S {
     val selectAll = Str("Seleccionar todo", "Select all", "Tout sélectionner", "Selecionar tudo")
     val clearSelection = Str("Quitar selección", "Clear selection", "Effacer la sélection", "Limpar seleção")
     val editSelected = Str("Asignar álbum y artista…", "Set album and artist…", "Définir l'album et l'artiste…", "Definir álbum e artista…")
+    val addSelectedToPlaylist = Str(
+        "Añadir %1\$d canciones a una lista…",
+        "Add %1\$d songs to a playlist…",
+        "Ajouter %1\$d titres à une playlist…",
+        "Adicionar %1\$d músicas a uma playlist…",
+    )
     val editSelectedTags = Str(
         "Editar etiquetas de %1\$d canciones…",
         "Edit tags of %1\$d songs…",

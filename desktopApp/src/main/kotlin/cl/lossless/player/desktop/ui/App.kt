@@ -238,6 +238,10 @@ private fun Library(player: Player, searchFocus: FocusRequester, language: Lang?
             },
             findLyrics = { dialog = TrackDialog.FindLyrics(it) },
             addToPlaylist = { if (it.isNotEmpty()) dialog = TrackDialog.AddToPlaylist(it) },
+            addSelectionToPlaylist = {
+                val chosen = tracks.filter { it.path in selection.paths }
+                if (chosen.isNotEmpty()) dialog = TrackDialog.AddToPlaylist(chosen, fromSelection = true)
+            },
         )
     }
 

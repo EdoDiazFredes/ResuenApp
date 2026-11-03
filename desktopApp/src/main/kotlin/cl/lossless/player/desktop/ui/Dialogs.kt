@@ -100,7 +100,8 @@ sealed interface TrackDialog {
     data class FindCover(val tracks: List<Track>) : TrackDialog
     data class FindLyrics(val track: Track) : TrackDialog
     data object Equalizer : TrackDialog
-    data class AddToPlaylist(val tracks: List<Track>) : TrackDialog
+    /** [fromSelection]: las pistas son las marcadas; al añadirlas se quita la selección. */
+    data class AddToPlaylist(val tracks: List<Track>, val fromSelection: Boolean = false) : TrackDialog
     /** Crear (id null) o renombrar una lista. */
     data class PlaylistName(val id: String?, val current: String) : TrackDialog
     data class DeletePlaylist(val id: String, val name: String) : TrackDialog
@@ -114,6 +115,8 @@ class TrackActions(
     val findCover: (Track) -> Unit,
     val findLyrics: (Track) -> Unit,
     val addToPlaylist: (List<Track>) -> Unit,
+    /** Añade a una lista todas las pistas marcadas, también las que la búsqueda oculta. */
+    val addSelectionToPlaylist: () -> Unit,
 )
 
 val LocalTrackActions = staticCompositionLocalOf<TrackActions?> { null }
@@ -189,7 +192,7 @@ fun TrackDialogHost(dialog: TrackDialog, player: Player, onDismiss: () -> Unit, 
                     DialogHeader(t(S.equalizer), null, onDismiss)
                     EqualizerPanel(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()))
                 }
-                is TrackDialog.AddToPlaylist -> AddToPlaylistDialog(dialog.tracks, onDismiss)
+                is TrackDialog.AddToPlaylist -> AddToPlaylistDialog(dialog.tracks, dialog.fromSelection, onDismiss)
                 is TrackDialog.PlaylistName -> PlaylistNameDialog(dialog.id, dialog.current, onDismiss)
                 is TrackDialog.DeletePlaylist -> {
                     DialogHeader(t(S.deletePlaylist), null, onDismiss)
@@ -553,13 +556,18 @@ private fun pickImage(title: String): File? {
 
 /** Elegir una lista existente o crear una nueva con las pistas (una canción, un álbum o la cola). */
 @Composable
-private fun ColumnScope.AddToPlaylistDialog(tracks: List<Track>, onDismiss: () -> Unit) {
+private fun ColumnScope.AddToPlaylistDialog(tracks: List<Track>, fromSelection: Boolean, onDismiss: () -> Unit) {
     var name by remember { mutableStateOf("") }
     val paths = remember(tracks) { tracks.map { it.path } }
+    val selection = LocalTrackSelection.current
+    fun done() {
+        if (fromSelection) selection?.clear()
+        onDismiss()
+    }
     fun create() {
         if (name.isBlank()) return
         DesktopPlaylists.create(name, paths)
-        onDismiss()
+        done()
     }
     DialogHeader(
         t(S.addToPlaylist).removeSuffix("…"),
@@ -583,7 +591,7 @@ private fun ColumnScope.AddToPlaylistDialog(tracks: List<Track>, onDismiss: () -
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
                         .background(if (hovered) Neon.Hover.copy(alpha = 0.6f) else Color.Transparent)
                         .hoverable(interaction)
-                        .clickable { DesktopPlaylists.add(list.id, paths); onDismiss() }
+                        .clickable { DesktopPlaylists.add(list.id, paths); done() }
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
