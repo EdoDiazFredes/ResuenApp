@@ -386,4 +386,13 @@ object S {
     val updateInstall = Str("Descargar e instalar", "Download and install", "Télécharger et installer", "Baixar e instalar")
     val updateDownloading = Str("Descargando… %1\$d %%", "Downloading… %1\$d %%", "Téléchargement… %1\$d %%", "Baixando… %1\$d %%")
     val updateFailed = Str("No se pudo actualizar: %1\$s", "Update failed: %1\$s", "Échec de la mise à jour : %1\$s", "Não foi possível atualizar: %1\$s")
+    val updateDownloadFailed = Str(
+        "La descarga se interrumpió: %1\$s. Reanuda para seguir donde quedó.",
+        "The download was interrupted: %1\$s. Resume to pick up where it left off.",
+        "Le téléchargement a été interrompu : %1\$s. Reprenez pour continuer là où il s'est arrêté.",
+        "O download foi interrompido: %1\$s. Retome para continuar de onde parou.",
+    )
+    val updateResume = Str("Reanudar descarga", "Resume download", "Reprendre le téléchargement", "Retomar download")
+    val updateResumePill = Str("Reanudar %1\$s", "Resume %1\$s", "Reprendre %1\$s", "Retomar %1\$s")
+    val updateCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
 }
