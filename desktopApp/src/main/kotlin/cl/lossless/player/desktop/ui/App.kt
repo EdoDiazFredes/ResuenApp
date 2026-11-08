@@ -42,6 +42,12 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.automirrored.rounded.MenuOpen
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.ui.draw.shadow
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -318,6 +324,7 @@ private fun Library(player: Player, searchFocus: FocusRequester, language: Lang?
                         trackCount = filtered.size,
                         playlistCount = DesktopPlaylists.all.size,
                         onSelect = ::select,
+                        onAddFolder = ::addFolder,
                     )
                     if (showPanel && Appearance.panelLeft) Panel()
 
@@ -523,96 +530,160 @@ private fun SearchField(query: String, onQuery: (String) -> Unit, focus: FocusRe
     }
 }
 
-/** Barra lateral izquierda: secciones de la biblioteca y Ajustes al pie. Se puede reducir a solo íconos. */
+private val SIDEBAR_RAIL = 60.dp
+private val SIDEBAR_OPEN = 212.dp
+
+/**
+ * Menú lateral al estilo de Magnific: una tarjeta redondeada separada del contenido que alterna,
+ * con el botón de arriba, entre un riel de solo íconos y el menú con los nombres. Arriba va la
+ * acción principal (agregar carpeta) en color de acento; abajo, Ajustes y el cambio de tema, que
+ * en el riel se apilan y abierto quedan en fila.
+ */
 @Composable
-private fun Sidebar(selected: Tab, trackCount: Int, playlistCount: Int, onSelect: (Tab) -> Unit) {
-    val collapsed = Appearance.sidebarCollapsed
-    val width by animateDpAsState(if (collapsed) 62.dp else 240.dp)
+private fun Sidebar(selected: Tab, trackCount: Int, playlistCount: Int, onSelect: (Tab) -> Unit, onAddFolder: () -> Unit) {
+    val open = !Appearance.sidebarCollapsed
+    val width by animateDpAsState(if (open) SIDEBAR_OPEN else SIDEBAR_RAIL)
+    val card = RoundedCornerShape(14.dp)
     Column(
-        Modifier.width(width).fillMaxHeight().background(Neon.Surface.copy(alpha = 0.75f)).padding(10.dp),
+        // Margen parejo y sombra para que la tarjeta se vea flotando sobre el fondo de la ventana.
+        Modifier.padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 10.dp).width(width).fillMaxHeight()
+            .shadow(if (Appearance.palette.dark) 18.dp else 10.dp, card, clip = false, ambientColor = Color.Black, spotColor = Color.Black)
+            .clip(card).background(Neon.Surface).border(1.dp, Neon.Border, card)
+            .padding(horizontal = 8.dp, vertical = 10.dp),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.Start,
-        ) {
-            if (!collapsed) {
-                SectionLabel(t(S.library), Modifier.padding(start = 12.dp).weight(1f), color = Neon.Accent)
+        // Botón para abrir o recoger el menú, siempre en el mismo lugar.
+        Row(Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (open) {
+                SectionLabel(t(S.library), Modifier.padding(start = 10.dp).weight(1f), color = Neon.Muted)
             }
-            SmallIconButton(
-                if (collapsed) Icons.AutoMirrored.Rounded.KeyboardArrowRight else Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
-                if (collapsed) t(S.expandSidebar) else t(S.collapseSidebar),
+            NavIconButton(
+                if (open) Icons.AutoMirrored.Rounded.MenuOpen else Icons.Rounded.Menu,
+                if (open) t(S.collapseSidebar) else t(S.expandSidebar),
+                tooltip = !open,
+                modifier = if (open) Modifier else Modifier.fillMaxWidth(),
                 onClick = Appearance::toggleSidebar,
             )
         }
-        NavItem(Icons.Rounded.MusicNote, t(S.songs), selected == Tab.SONGS, collapsed, badge = "$trackCount") { onSelect(Tab.SONGS) }
-        NavItem(Icons.Rounded.Album, t(S.albums), selected == Tab.ALBUMS, collapsed) { onSelect(Tab.ALBUMS) }
-        NavItem(Icons.Rounded.Mic, t(S.artists), selected == Tab.ARTISTS, collapsed) { onSelect(Tab.ARTISTS) }
-        NavItem(Icons.Rounded.Folder, t(S.folders), selected == Tab.FOLDERS, collapsed) { onSelect(Tab.FOLDERS) }
-        NavItem(Icons.AutoMirrored.Rounded.QueueMusic, t(S.playlists), selected == Tab.PLAYLISTS, collapsed, badge = "$playlistCount") { onSelect(Tab.PLAYLISTS) }
+        Spacer(Modifier.height(6.dp))
+        PrimaryNavButton(t(S.addFolder), open, onAddFolder)
+        Spacer(Modifier.height(10.dp))
+        NavItem(Icons.Rounded.MusicNote, t(S.songs), selected == Tab.SONGS, open, badge = "$trackCount") { onSelect(Tab.SONGS) }
+        NavItem(Icons.Rounded.Album, t(S.albums), selected == Tab.ALBUMS, open) { onSelect(Tab.ALBUMS) }
+        NavItem(Icons.Rounded.Mic, t(S.artists), selected == Tab.ARTISTS, open) { onSelect(Tab.ARTISTS) }
+        NavItem(Icons.Rounded.Folder, t(S.folders), selected == Tab.FOLDERS, open) { onSelect(Tab.FOLDERS) }
+        Box(Modifier.padding(horizontal = 10.dp, vertical = 10.dp).fillMaxWidth().height(1.dp).background(Neon.Border))
+        NavItem(Icons.AutoMirrored.Rounded.QueueMusic, t(S.playlists), selected == Tab.PLAYLISTS, open, badge = "$playlistCount") { onSelect(Tab.PLAYLISTS) }
         Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(Neon.Border))
-        Spacer(Modifier.height(8.dp))
-        NavItem(Icons.Rounded.Settings, t(S.settings), selected == Tab.SETTINGS, collapsed) { onSelect(Tab.SETTINGS) }
+
+        val dark = Appearance.palette.dark
+        val themeIcon = if (dark) Icons.Rounded.DarkMode else Icons.Rounded.LightMode
+        val toggleTheme = { Appearance.set(if (dark) ThemeMode.LIGHT else ThemeMode.NIGHT) }
+        val settingsTint = if (selected == Tab.SETTINGS) Neon.Accent else Neon.Muted
+        if (open) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                NavIconButton(Icons.Rounded.Settings, t(S.settings), tint = settingsTint, onClick = { onSelect(Tab.SETTINGS) })
+                NavIconButton(themeIcon, t(S.toggleTheme), onClick = toggleTheme)
+            }
+        } else {
+            NavIconButton(Icons.Rounded.Settings, t(S.settings), tint = settingsTint, tooltip = true, modifier = Modifier.fillMaxWidth(), onClick = { onSelect(Tab.SETTINGS) })
+            NavIconButton(themeIcon, t(S.toggleTheme), tooltip = true, modifier = Modifier.fillMaxWidth(), onClick = toggleTheme)
+        }
     }
-    Box(Modifier.width(1.dp).fillMaxHeight().background(Neon.Border))
 }
 
+/** Globo con el nombre a la derecha del riel, para cuando solo se ven los íconos. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NavItem(icon: ImageVector, label: String, selected: Boolean, collapsed: Boolean, badge: String? = null, onClick: () -> Unit) {
+private fun RailTooltip(label: String, enabled: Boolean, content: @Composable () -> Unit) {
+    if (!enabled) { content(); return }
+    TooltipArea(
+        tooltip = {
+            Text(
+                label, color = Neon.Text, fontSize = 12.sp,
+                modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Neon.Card)
+                    .border(1.dp, Neon.Border, RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 5.dp),
+            )
+        },
+        tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.CenterEnd, alignment = Alignment.CenterEnd, offset = DpOffset(10.dp, 0.dp)),
+    ) { content() }
+}
+
+@Composable
+private fun NavIconButton(
+    icon: ImageVector, label: String, tint: Color = Neon.Muted, tooltip: Boolean = false,
+    modifier: Modifier = Modifier, onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    RailTooltip(label, tooltip) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(if (hovered) Neon.Hover else Color.Transparent)
+                    .hoverable(interaction).clickable(onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, label, tint = if (hovered) Neon.TextStrong else tint, modifier = Modifier.size(17.dp)) }
+        }
+    }
+}
+
+/** Acción principal en color de acento, como el botón "Crear" de Magnific. */
+@Composable
+private fun PrimaryNavButton(label: String, open: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    RailTooltip(label, !open) {
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (hovered) Neon.Hover else Color.Transparent)
+                .hoverable(interaction).clickable(onClick = onClick).padding(horizontal = 6.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (open) Arrangement.Start else Arrangement.Center,
+        ) {
+            Box(
+                Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Neon.Accent),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Rounded.Add, label, tint = Neon.Night, modifier = Modifier.size(18.dp)) }
+            if (open) {
+                Spacer(Modifier.width(10.dp))
+                Text(label, color = Neon.Text, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+            }
+        }
+    }
+}
+
+/** Abierto: ícono, nombre y contador. Riel: solo el ícono, con el nombre en un globo. */
+@Composable
+private fun NavItem(icon: ImageVector, label: String, selected: Boolean, open: Boolean, badge: String? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(8.dp)
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val color = when {
-        selected -> Neon.Accent
+        selected -> Neon.TextStrong
         hovered -> Neon.Text
         else -> Neon.Muted
     }
-    // Contraída solo queda el ícono; el nombre aparece como globo al pasar el mouse.
-    if (collapsed) {
-        TooltipArea(
-            tooltip = {
-                Text(
-                    label, color = Neon.Text, fontSize = 12.sp,
-                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Neon.Card)
-                        .border(1.dp, Neon.Border, RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 5.dp),
+    RailTooltip(label, !open) {
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 1.dp).clip(shape)
+                .background(
+                    when {
+                        selected -> Neon.Accent.copy(alpha = 0.12f)
+                        hovered -> Neon.Hover
+                        else -> Color.Transparent
+                    },
                 )
-            },
-            tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.CenterEnd, alignment = Alignment.CenterEnd, offset = DpOffset(8.dp, 0.dp)),
-        ) { NavRow(icon, label, selected, collapsed, badge, shape, interaction, hovered, color, onClick) }
-    } else {
-        NavRow(icon, label, selected, collapsed, badge, shape, interaction, hovered, color, onClick)
-    }
-}
-
-@Composable
-private fun NavRow(
-    icon: ImageVector, label: String, selected: Boolean, collapsed: Boolean, badge: String?, shape: RoundedCornerShape,
-    interaction: MutableInteractionSource, hovered: Boolean, color: Color, onClick: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 1.dp).clip(shape)
-            .background(
-                when {
-                    selected -> Neon.Accent.copy(alpha = 0.10f)
-                    hovered -> Neon.Hover
-                    else -> Color.Transparent
-                },
-            )
-            .border(1.dp, if (selected) Neon.Accent.copy(alpha = 0.20f) else Color.Transparent, shape)
-            .hoverable(interaction)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.Start,
-    ) {
-        // El ícono siempre lleva el color de acento; el texto se ilumina al elegirlo o pasar el mouse.
-        Icon(icon, label, tint = if (selected || hovered) color else Neon.Accent.copy(alpha = 0.75f), modifier = Modifier.size(17.dp))
-        if (!collapsed) {
-            Spacer(Modifier.width(12.dp))
-            Text(label, color = color, fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f), maxLines = 1)
-            if (badge != null) Text(badge, color = color.copy(alpha = 0.6f), fontFamily = Mono, fontSize = 10.sp)
+                .hoverable(interaction)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (open) Arrangement.Start else Arrangement.Center,
+        ) {
+            // El ícono lleva el acento al estar elegido; el resto, el gris del menú.
+            Icon(icon, label, tint = if (selected) Neon.Accent else color, modifier = Modifier.size(17.dp))
+            if (open) {
+                Spacer(Modifier.width(12.dp))
+                Text(label, color = color, fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                if (badge != null) Text(badge, color = color.copy(alpha = 0.6f), fontFamily = Mono, fontSize = 10.sp, maxLines = 1, softWrap = false)
+            }
         }
     }
 }
