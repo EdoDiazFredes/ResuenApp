@@ -62,6 +62,8 @@ class TrackActions(
     val enqueue: (Track) -> Unit,
     val toggleFavorite: (Track) -> Unit,
     val addToPlaylist: (Track) -> Unit,
+    /** Varias canciones a la vez (las marcadas); [onAdded] corre cuando ya están en la playlist. */
+    val addAllToPlaylist: (tracks: List<Track>, onAdded: () -> Unit) -> Unit,
 ) {
     fun isCurrent(track: Track) = track.uri.toString() == currentMediaId
     fun isFavorite(track: Track) = track.uri.toString() in favorites

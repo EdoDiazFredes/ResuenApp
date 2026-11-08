@@ -39,6 +39,14 @@ class PlaylistsViewModel(app: Application) : AndroidViewModel(app) {
         list.map { if (it.id == id && uri !in it.trackUris) it.copy(trackUris = it.trackUris + uri) else it }
     }
 
+    /** Añade varias canciones al final, sin repetir las que ya estaban. */
+    fun addAll(id: String, uris: List<String>) = mutate { list ->
+        list.map { p ->
+            if (p.id != id) p
+            else p.copy(trackUris = p.trackUris + uris.filter { it !in p.trackUris }.distinct())
+        }
+    }
+
     fun remove(id: String, uri: String) = mutate { list ->
         list.map { if (it.id == id) it.copy(trackUris = it.trackUris - uri) else it }
     }

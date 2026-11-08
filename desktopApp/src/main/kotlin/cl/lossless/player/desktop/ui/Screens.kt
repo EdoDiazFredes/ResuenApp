@@ -437,7 +437,10 @@ private fun SelectionBar(selection: TrackSelection, tracks: List<Track>, modifie
         if (!selection.paths.containsAll(tracks.map { it.path })) {
             GhostButton(null, t(S.selectAll)) { selection.selectAll(tracks) }
         }
-        if (actions != null) PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        if (actions != null) {
+            GhostButton(Icons.AutoMirrored.Rounded.PlaylistAdd, t(S.addToPlaylist), actions.addSelectionToPlaylist)
+            PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        }
         SmallIconButton(Icons.Rounded.Close, t(S.clearSelection), onClick = selection::clear)
     }
 }
@@ -468,11 +471,13 @@ private fun TrackContextMenu(track: Track, content: @Composable () -> Unit) {
     val cover = t(S.searchCover)
     val lyrics = t(S.searchLyrics)
     val playlist = t(S.addToPlaylist)
+    val playlistMany = selection?.let { t(S.addSelectedToPlaylist, it.paths.size) }
     ContextMenuArea(
         items = {
             val inSelection = selection != null && track.path in selection.paths && selection.paths.size > 1
             buildList {
-                add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
+                if (inSelection && playlistMany != null) add(ContextMenuItem(playlistMany) { actions.addSelectionToPlaylist() })
+                else add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
                 if (inSelection && editMany != null) add(ContextMenuItem(editMany) { actions.editSelection() })
                 else add(ContextMenuItem(edit) { actions.editTags(listOf(track)) })
                 if (selection != null && track.path !in selection.paths) add(ContextMenuItem(select) { selection.toggle(track.path) })
