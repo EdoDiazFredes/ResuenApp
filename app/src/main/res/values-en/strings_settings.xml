@@ -174,4 +174,13 @@
     <string name="update_dialog_title">New version available</string>
     <string name="update_dialog_body">Version %1$s is available. It downloads and installs over this one, keeping your library and settings.</string>
     <string name="update_later">Later</string>
+    <string name="update_resume">Resume</string>
+    <string name="update_cancel">Cancel</string>
+    <string name="update_download_failed">The download was interrupted: %1$s. Tap Resume to pick up where it left off.</string>
+    <string name="update_channel_name">Updates</string>
+    <string name="update_notification_title">Downloading ResuenApp %1$s</string>
+    <string name="update_ready_title">Version %1$s downloaded</string>
+    <string name="update_ready_body">Tap to install it.</string>
+    <string name="update_interrupted_title">Download interrupted</string>
+    <string name="update_interrupted_body">Open ResuenApp and tap Resume to continue.</string>
 </resources>

@@ -5,7 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cl.lossless.player.update.AvailableUpdate
 import cl.lossless.player.update.UpdateChecker
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.system.exitProcess
@@ -17,13 +22,15 @@ sealed interface UpdateState {
     data object UpToDate : UpdateState
     data class Available(val update: AvailableUpdate) : UpdateState
     data class Downloading(val update: AvailableUpdate, val progress: Float) : UpdateState
-    data class Failed(val message: String) : UpdateState
+    /** Falló la búsqueda ([update] null) o la descarga de [update], que se puede reanudar. */
+    data class Failed(val message: String, val update: AvailableUpdate? = null) : UpdateState
 }
 
 /**
  * Actualiza la app desde el repositorio público de instaladores (canal `exp`, igual que la
  * build experimental de Android). En Windows descarga el Setup.exe, lo abre y cierra la app para
  * que el instalador reemplace la versión anterior; en macOS abre la .dmg de su arquitectura.
+ * Si la descarga se corta, el archivo parcial queda guardado y "Reanudar" sigue desde ahí.
  */
 object DesktopUpdater {
 
@@ -50,22 +57,42 @@ object DesktopUpdater {
         }
     }
 
-    /** Descarga [update], abre el instalador y cierra la app (detiene el audio antes). */
+    @Volatile
+    private var job: Job? = null
+
+    /** Detiene la descarga; lo ya bajado queda guardado para reanudar. */
+    fun cancel() {
+        job?.cancel()
+    }
+
+    /** Descarga (o reanuda) [update], abre el instalador y cierra la app (detiene el audio antes). */
     suspend fun install(update: AvailableUpdate, player: Player) {
         if (state is UpdateState.Downloading) return
         state = UpdateState.Downloading(update, 0f)
         val dir = File(AppDirs.data, "updates")
         val file = File(dir, update.assetName)
-        val result = withContext(Dispatchers.IO) {
-            runCatching {
-                dir.listFiles()?.forEach { if (it.name != file.name) it.delete() }
-                checker.download(update, file) { p -> state = UpdateState.Downloading(update, p) }
+        val result = supervisorScope {
+            val download = async(Dispatchers.IO) {
+                // Borra descargas de otras versiones, pero no el .part de esta.
+                dir.listFiles()?.forEach { if (!it.name.startsWith(file.name)) it.delete() }
+                var lastPercent = -1
+                checker.download(update, file, isActive = { isActive }) { p ->
+                    val percent = (p * 100).toInt()
+                    if (percent != lastPercent) {
+                        lastPercent = percent
+                        state = UpdateState.Downloading(update, p)
+                    }
+                }
                 val command = if (IsMac) listOf("open", file.absolutePath) else listOf(file.absolutePath)
                 ProcessBuilder(command).directory(dir).start()
             }
+            job = download
+            runCatching { download.await() }
         }
+        job = null
         result.onFailure {
-            state = UpdateState.Failed(it.message ?: it.javaClass.simpleName)
+            state = if (it is CancellationException) UpdateState.Available(update)
+            else UpdateState.Failed(it.message ?: it.javaClass.simpleName, update)
             return
         }
         player.shutdown()

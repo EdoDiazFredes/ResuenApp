@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.SelectAll
@@ -37,9 +38,15 @@ import cl.lossless.player.library.Track
 import cl.lossless.player.tags.TagField
 import cl.lossless.player.ui.TagEditState
 
-/** Barra que aparece mientras hay canciones marcadas: cuántas, marcar todas, editar y salir. */
+/** Barra que aparece mientras hay canciones marcadas: cuántas, marcar todas, añadir a playlist, editar y salir. */
 @Composable
-fun SelectionBar(selection: TrackSelection, visible: List<Track>, onEdit: () -> Unit, modifier: Modifier = Modifier) {
+fun SelectionBar(
+    selection: TrackSelection,
+    visible: List<Track>,
+    onEdit: () -> Unit,
+    onAddToPlaylist: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         shape = MaterialTheme.shapes.large,
@@ -58,6 +65,9 @@ fun SelectionBar(selection: TrackSelection, visible: List<Track>, onEdit: () -> 
                 IconButton(onClick = { selection.selectAll(visible) }) {
                     Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                 }
+            }
+            IconButton(onClick = onAddToPlaylist) {
+                Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = stringResource(R.string.library_add_to_playlist))
             }
             FilledTonalButton(onClick = onEdit) {
                 Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(18.dp))
