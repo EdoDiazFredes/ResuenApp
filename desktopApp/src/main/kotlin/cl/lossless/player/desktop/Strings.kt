@@ -442,4 +442,62 @@ object S {
         "Estime sur cet ordinateur quand chaque ligne est chantée (approximatif, hors ligne). Pour un minutage exact, utilisez « Synchroniser à la main » dans le panneau des paroles.",
         "Estima no computador quando cada linha é cantada (aproximado, sem internet). Para tempos exatos, use “Sincronizar manualmente” no painel da letra.",
     )
+
+    // Google Drive
+    val drive = Str("Google Drive", "Google Drive", "Google Drive", "Google Drive")
+    val driveConnectTitle = Str("Escucha tu música de Google Drive", "Play your music from Google Drive", "Écoutez votre musique depuis Google Drive", "Ouça suas músicas do Google Drive")
+    val driveConnectBody = Str(
+        "Inicia sesión con tu cuenta de Google para explorar tus carpetas. Cada canción se descarga completa antes de sonar, así que se escucha sin pérdida, igual que el archivo original.",
+        "Sign in with your Google account to browse your folders. Each song is downloaded in full before it plays, so it sounds lossless, exactly like the original file.",
+        "Connectez-vous avec votre compte Google pour parcourir vos dossiers. Chaque titre est téléchargé en entier avant la lecture : le son est sans perte, identique au fichier d'origine.",
+        "Entre com sua conta do Google para navegar pelas suas pastas. Cada música é baixada inteira antes de tocar, então soa sem perdas, igual ao arquivo original.",
+    )
+    val driveConnect = Str("Conectar con Google", "Connect with Google", "Se connecter avec Google", "Conectar com o Google")
+    val driveWaiting = Str(
+        "Termina el inicio de sesión en el navegador…",
+        "Finish signing in in your browser…",
+        "Terminez la connexion dans le navigateur…",
+        "Termine o login no navegador…",
+    )
+    val driveNotConfigured = Str(
+        "Esta compilación no trae el cliente de Google configurado, así que Drive no está disponible.",
+        "This build doesn't include the Google client setup, so Drive isn't available.",
+        "Cette version n'inclut pas la configuration du client Google : Drive n'est pas disponible.",
+        "Esta versão não inclui a configuração do cliente do Google, então o Drive não está disponível.",
+    )
+    val driveSignedInAs = Str("Conectado como %1\$s", "Signed in as %1\$s", "Connecté en tant que %1\$s", "Conectado como %1\$s")
+    val driveSignOut = Str("Desconectar", "Disconnect", "Déconnecter", "Desconectar")
+    val driveMyDrive = Str("Mi unidad", "My Drive", "Mon Drive", "Meu Drive")
+    val driveShared = Str("Compartido conmigo", "Shared with me", "Partagés avec moi", "Compartilhados comigo")
+    val driveEmpty = Str(
+        "No hay carpetas ni canciones aquí",
+        "No folders or songs here",
+        "Aucun dossier ni titre ici",
+        "Nenhuma pasta ou música aqui",
+    )
+    val driveLoading = Str("Cargando…", "Loading…", "Chargement…", "Carregando…")
+    val driveDownloading = Str("Descargando %1\$d de %2\$d · %3\$s", "Downloading %1\$d of %2\$d · %3\$s", "Téléchargement %1\$d sur %2\$d · %3\$s", "Baixando %1\$d de %2\$d · %3\$s")
+    val driveCache = Str("Caché de Drive: %1\$s", "Drive cache: %1\$s", "Cache Drive : %1\$s", "Cache do Drive: %1\$s")
+    val driveClearCache = Str("Vaciar caché", "Clear cache", "Vider le cache", "Limpar cache")
+    val driveError = Str("Error de Google Drive: %1\$s", "Google Drive error: %1\$s", "Erreur Google Drive : %1\$s", "Erro do Google Drive: %1\$s")
+    val driveSessionExpired = Str(
+        "La sesión de Google venció. Vuelve a conectar Drive.",
+        "Your Google session expired. Connect Drive again.",
+        "La session Google a expiré. Reconnectez Drive.",
+        "A sessão do Google expirou. Conecte o Drive de novo.",
+    )
+    val driveBrowserOk = Str("Listo, Drive quedó conectado", "Done, Drive is connected", "C'est fait, Drive est connecté", "Pronto, o Drive está conectado")
+    val driveBrowserOkBody = Str(
+        "Ya puedes cerrar esta pestaña y volver a ResuenApp.",
+        "You can close this tab and go back to ResuenApp.",
+        "Vous pouvez fermer cet onglet et revenir à ResuenApp.",
+        "Você já pode fechar esta aba e voltar ao ResuenApp.",
+    )
+    val driveBrowserFailed = Str("No se conectó Drive", "Drive wasn't connected", "Drive n'a pas été connecté", "O Drive não foi conectado")
+    val driveBrowserFailedBody = Str(
+        "Cierra esta pestaña y vuelve a intentarlo desde ResuenApp.",
+        "Close this tab and try again from ResuenApp.",
+        "Fermez cet onglet et réessayez depuis ResuenApp.",
+        "Feche esta aba e tente de novo pelo ResuenApp.",
+    )
 }

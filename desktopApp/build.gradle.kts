@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -29,7 +30,25 @@ val generateVersion by tasks.registering {
     outputs.dir(out)
     doLast { out.get().file("resuenapp-version.txt").asFile.writeText(version) }
 }
-sourceSets { main { resources.srcDir(generateVersion) } }
+// Cliente OAuth de Google (tipo "App de escritorio") para Google Drive. Lo entregan los secretos del
+// CI (GOOGLE_DESKTOP_CLIENT_ID y GOOGLE_DESKTOP_CLIENT_SECRET); sin ellos la app compila igual y la
+// pantalla de Drive avisa que no está configurado. Google no considera secreto el "client secret"
+// de una app instalada, pero se deja fuera del repositorio igual.
+val generateDriveConfig by tasks.registering {
+    val out = layout.buildDirectory.dir("generated/drive")
+    val clientId = providers.environmentVariable("GOOGLE_DESKTOP_CLIENT_ID").orElse("")
+    val clientSecret = providers.environmentVariable("GOOGLE_DESKTOP_CLIENT_SECRET").orElse("")
+    inputs.property("clientId", clientId)
+    inputs.property("clientSecret", clientSecret)
+    outputs.dir(out)
+    doLast {
+        val props = Properties()
+        props["clientId"] = clientId.get().trim()
+        props["clientSecret"] = clientSecret.get().trim()
+        out.get().file("resuenapp-drive.properties").asFile.outputStream().use { props.store(it, null) }
+    }
+}
+sourceSets { main { resources.srcDir(generateVersion); resources.srcDir(generateDriveConfig) } }
 
 // Cada instalador lleva solo las librerías nativas de FFmpeg de la máquina que lo compila
 // (jpackage no puede empaquetar para otro sistema): windows-x86_64, macosx-arm64 o macosx-x86_64.

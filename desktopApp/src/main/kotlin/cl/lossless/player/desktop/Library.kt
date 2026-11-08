@@ -191,6 +191,17 @@ object AppSettings {
         get() = prefs.getBoolean("media_keys", !IsMac)
         set(value) = prefs.putBoolean("media_keys", value)
 
+    // Google Drive: sesión guardada (el refresh token permite pedir accesos nuevos sin el navegador).
+    var driveRefreshToken: String?
+        get() = prefs.get("drive_refresh", null)
+        set(value) = if (value == null) prefs.remove("drive_refresh") else prefs.put("drive_refresh", value)
+    var driveAccount: Pair<String, String>?
+        get() = prefs.get("drive_email", null)?.let { prefs.get("drive_name", "") to it }
+        set(value) {
+            if (value == null) { prefs.remove("drive_name"); prefs.remove("drive_email") }
+            else { prefs.put("drive_name", value.first); prefs.put("drive_email", value.second) }
+        }
+
     // Mini reproductor: si queda encima de las demás ventanas y dónde se dejó (null = esquina inferior derecha).
     var miniOnTop: Boolean
         get() = prefs.getBoolean("mini_on_top", true)
