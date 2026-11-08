@@ -145,6 +145,11 @@ object AppSettings {
         get() = prefs.getBoolean("shuffle", false)
         set(value) = prefs.putBoolean("shuffle", value)
 
+    /** Estimar los tiempos de las letras que vienen solo como texto al abrirlas (como en Android). */
+    var lyricsAutoSync: Boolean
+        get() = prefs.getBoolean("lyricsAutoSync", true)
+        set(value) = prefs.putBoolean("lyricsAutoSync", value)
+
     // Apariencia: nombres de ThemeMode, Accent, AppFont y TextSize (ver ui/Theme.kt).
     var theme: String?
         get() = prefs.get("theme", null)

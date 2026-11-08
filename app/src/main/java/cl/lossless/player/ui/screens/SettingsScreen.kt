@@ -407,26 +407,32 @@ private fun UpdateSection() {
             is UpdateState.Available -> stringResource(R.string.update_available, state.update.version)
             is UpdateState.Downloading -> stringResource(R.string.update_downloading, (state.progress * 100).toInt())
             is UpdateState.NeedsPermission -> stringResource(R.string.update_permission)
-            is UpdateState.Failed -> stringResource(R.string.update_failed, state.message)
+            is UpdateState.Failed ->
+                if (state.update != null) stringResource(R.string.update_download_failed, state.message)
+                else stringResource(R.string.update_failed, state.message)
         }
         val update = when (state) {
             is UpdateState.Available -> state.update
             is UpdateState.NeedsPermission -> state.update
+            is UpdateState.Downloading -> state.update
+            is UpdateState.Failed -> state.update
             else -> null
         }
         SettingRow(
             title = if (update != null) stringResource(R.string.update_available, update.version) else stringResource(R.string.update_check),
-            subtitle = subtitle.takeIf { update == null || state is UpdateState.NeedsPermission },
+            subtitle = subtitle.takeIf { update == null || state !is UpdateState.Available },
             trailing = {
-                if (update != null) {
-                    FilledTonalButton(onClick = { scope.launch { AppUpdater.install(context, update) } }) {
-                        Text(stringResource(R.string.update_install))
-                    }
-                } else {
-                    Icon(Icons.Rounded.Refresh, null)
+                when {
+                    state is UpdateState.Downloading ->
+                        TextButton(onClick = { AppUpdater.cancel() }) { Text(stringResource(R.string.update_cancel)) }
+                    update != null ->
+                        FilledTonalButton(onClick = { AppUpdater.install(context, update) }) {
+                            Text(stringResource(if (state is UpdateState.Failed) R.string.update_resume else R.string.update_install))
+                        }
+                    else -> Icon(Icons.Rounded.Refresh, null)
                 }
             },
-            onClick = if (update == null && state !is UpdateState.Checking && state !is UpdateState.Downloading) {
+            onClick = if (update == null && state !is UpdateState.Checking) {
                 { scope.launch { AppUpdater.check(context.applicationContext) } }
             } else null,
         )

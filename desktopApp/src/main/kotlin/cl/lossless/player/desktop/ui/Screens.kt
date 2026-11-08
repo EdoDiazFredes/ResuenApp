@@ -45,6 +45,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.zIndex
+import cl.lossless.player.desktop.AppSettings
 import cl.lossless.player.desktop.DesktopPlaylists
 import cl.lossless.player.playlist.Playlist
 import java.awt.Cursor
@@ -437,7 +438,10 @@ private fun SelectionBar(selection: TrackSelection, tracks: List<Track>, modifie
         if (!selection.paths.containsAll(tracks.map { it.path })) {
             GhostButton(null, t(S.selectAll)) { selection.selectAll(tracks) }
         }
-        if (actions != null) PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        if (actions != null) {
+            GhostButton(Icons.AutoMirrored.Rounded.PlaylistAdd, t(S.addToPlaylist), actions.addSelectionToPlaylist)
+            PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        }
         SmallIconButton(Icons.Rounded.Close, t(S.clearSelection), onClick = selection::clear)
     }
 }
@@ -468,11 +472,13 @@ private fun TrackContextMenu(track: Track, content: @Composable () -> Unit) {
     val cover = t(S.searchCover)
     val lyrics = t(S.searchLyrics)
     val playlist = t(S.addToPlaylist)
+    val playlistMany = selection?.let { t(S.addSelectedToPlaylist, it.paths.size) }
     ContextMenuArea(
         items = {
             val inSelection = selection != null && track.path in selection.paths && selection.paths.size > 1
             buildList {
-                add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
+                if (inSelection && playlistMany != null) add(ContextMenuItem(playlistMany) { actions.addSelectionToPlaylist() })
+                else add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
                 if (inSelection && editMany != null) add(ContextMenuItem(editMany) { actions.editSelection() })
                 else add(ContextMenuItem(edit) { actions.editTags(listOf(track)) })
                 if (selection != null && track.path !in selection.paths) add(ContextMenuItem(select) { selection.toggle(track.path) })
@@ -915,6 +921,8 @@ fun SettingsScreen(
 
         AppearanceCard()
 
+        LyricsSettingsCard()
+
         SettingsCard(t(S.equalizer)) { EqualizerPanel(Modifier.fillMaxWidth()) }
 
         ShortcutsCard()
@@ -984,6 +992,32 @@ private fun AppearanceCard() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill(t(S.sideRight), selected = !Appearance.panelLeft) { Appearance.placePanel(false) }
             Pill(t(S.sideLeft), selected = Appearance.panelLeft) { Appearance.placePanel(true) }
+        }
+    }
+}
+
+/** Letras: estimar los tiempos de las que vienen solo como texto (como en Ajustes de Android). */
+@Composable
+private fun LyricsSettingsCard() {
+    SettingsCard(t(S.lyricsSettings)) {
+        var autoSync by remember { mutableStateOf(AppSettings.lyricsAutoSync) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(t(S.lyricsAutoSync), color = Neon.Text, fontSize = 13.sp)
+                Text(t(S.lyricsAutoSyncDesc), color = Neon.Muted, fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(
+                checked = autoSync,
+                onCheckedChange = {
+                    autoSync = it
+                    AppSettings.lyricsAutoSync = it
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
+                    uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
+                ),
+            )
         }
     }
 }

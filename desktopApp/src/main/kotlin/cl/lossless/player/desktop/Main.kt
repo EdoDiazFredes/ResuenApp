@@ -2,6 +2,7 @@ package cl.lossless.player.desktop
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,14 +50,23 @@ fun main(args: Array<String>) {
     if (args.firstOrNull() == "--self-test") {
         exitProcess(selfTest(args.getOrNull(1)?.let(::File)))
     }
+    // Ya hay una ResuenApp abierta: le pasa los archivos (si los hay) y esta copia se cierra.
+    if (!SingleInstance.acquire(args)) exitProcess(0)
     // Diálogos de Swing (elegir carpeta) con el aspecto nativo del sistema.
     runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
     val player = Player()
     Shortcuts.start(player)
+    // Archivos abiertos con la app ("Abrir con", doble clic, Finder): suenan de inmediato.
+    SingleInstance.onFiles { files ->
+        val tracks = files.mapNotNull { runCatching { LibraryScanner.readTrack(it.toPath()) }.getOrNull() }
+        player.playQueue(tracks, 0)
+    }
     application {
         val searchFocus = remember { FocusRequester() }
         var mini by remember { mutableStateOf(false) }
         var miniOnTop by remember { mutableStateOf(AppSettings.miniOnTop) }
+        // Se abrió la app otra vez: se muestra la ventana que esté en uso (completa o mini).
+        val raise by SingleInstance.raise.collectAsState()
         val miniState = rememberWindowState(size = miniPlayerSize(), position = miniStartPosition())
 
         fun showFull() {
@@ -70,6 +80,7 @@ fun main(args: Array<String>) {
             onCloseRequest = {
                 player.shutdown()
                 Shortcuts.shutdown()
+                SingleInstance.release()
                 exitApplication()
             },
             visible = !mini,
@@ -90,6 +101,7 @@ fun main(args: Array<String>) {
             // Atajos de reproducción: solo si nada enfocado (la búsqueda, un campo) usó la tecla.
             onKeyEvent = { e -> Shortcuts.handle(e, player) },
         ) {
+            LaunchedEffect(raise) { if (raise > 0 && !mini) SingleInstance.bringToFront(window) }
             // Barra de título de Windows con los colores de la app (fondo del tema, borde de acento).
             val palette = Appearance.palette
             LaunchedEffect(palette, mini) {
@@ -124,6 +136,7 @@ fun main(args: Array<String>) {
                 },
                 onKeyEvent = { e -> Shortcuts.handle(e, player) },
             ) {
+                LaunchedEffect(raise) { if (raise > 0) SingleInstance.bringToFront(window) }
                 CompositionLocalProvider(LocalLang provides (AppSettings.language ?: Lang.system())) {
                     NeonTheme {
                         MiniPlayer(

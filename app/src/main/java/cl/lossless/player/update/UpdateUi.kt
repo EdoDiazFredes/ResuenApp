@@ -5,17 +5,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import cl.lossless.player.R
-import kotlinx.coroutines.launch
 
 /** Al abrir la app busca una versión nueva y, si la hay, la ofrece una vez por sesión. */
 @Composable
 fun UpdatePrompt() {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { AppUpdater.check(context.applicationContext) }
     val available = AppUpdater.state as? UpdateState.Available ?: return
     if (AppUpdater.promptDismissed) return
@@ -26,7 +23,7 @@ fun UpdatePrompt() {
         confirmButton = {
             TextButton(onClick = {
                 AppUpdater.promptDismissed = true
-                scope.launch { AppUpdater.install(context, available.update) }
+                AppUpdater.install(context, available.update)
             }) { Text(stringResource(R.string.update_install)) }
         },
         dismissButton = {

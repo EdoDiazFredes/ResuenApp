@@ -238,6 +238,12 @@ object S {
     val selectAll = Str("Seleccionar todo", "Select all", "Tout sélectionner", "Selecionar tudo")
     val clearSelection = Str("Quitar selección", "Clear selection", "Effacer la sélection", "Limpar seleção")
     val editSelected = Str("Asignar álbum y artista…", "Set album and artist…", "Définir l'album et l'artiste…", "Definir álbum e artista…")
+    val addSelectedToPlaylist = Str(
+        "Añadir %1\$d canciones a una lista…",
+        "Add %1\$d songs to a playlist…",
+        "Ajouter %1\$d titres à une playlist…",
+        "Adicionar %1\$d músicas a uma playlist…",
+    )
     val editSelectedTags = Str(
         "Editar etiquetas de %1\$d canciones…",
         "Edit tags of %1\$d songs…",
@@ -258,8 +264,9 @@ object S {
     val sideRight = Str("A la derecha", "On the right", "À droite", "À direita")
     val sideLeft = Str("A la izquierda", "On the left", "À gauche", "À esquerda")
     val swapSide = Str("Cambiar de lado", "Switch side", "Changer de côté", "Trocar de lado")
-    val collapseSidebar = Str("Contraer biblioteca", "Collapse library", "Réduire la bibliothèque", "Recolher biblioteca")
-    val expandSidebar = Str("Expandir biblioteca", "Expand library", "Développer la bibliothèque", "Expandir biblioteca")
+    val collapseSidebar = Str("Contraer menú", "Collapse menu", "Réduire le menu", "Recolher menu")
+    val expandSidebar = Str("Expandir menú", "Expand menu", "Développer le menu", "Expandir menu")
+    val toggleTheme = Str("Cambiar tema claro u oscuro", "Switch light or dark theme", "Basculer thème clair ou sombre", "Alternar tema claro ou escuro")
 
     // Listas de reproducción
     val playlists = Str("Listas", "Playlists", "Playlists", "Playlists")
@@ -386,6 +393,55 @@ object S {
     val updateInstall = Str("Descargar e instalar", "Download and install", "Télécharger et installer", "Baixar e instalar")
     val updateDownloading = Str("Descargando… %1\$d %%", "Downloading… %1\$d %%", "Téléchargement… %1\$d %%", "Baixando… %1\$d %%")
     val updateFailed = Str("No se pudo actualizar: %1\$s", "Update failed: %1\$s", "Échec de la mise à jour : %1\$s", "Não foi possível atualizar: %1\$s")
+    val updateDownloadFailed = Str(
+        "La descarga se interrumpió: %1\$s. Reanuda para seguir donde quedó.",
+        "The download was interrupted: %1\$s. Resume to pick up where it left off.",
+        "Le téléchargement a été interrompu : %1\$s. Reprenez pour continuer là où il s'est arrêté.",
+        "O download foi interrompido: %1\$s. Retome para continuar de onde parou.",
+    )
+    val updateResume = Str("Reanudar descarga", "Resume download", "Reprendre le téléchargement", "Retomar download")
+    val updateResumePill = Str("Reanudar %1\$s", "Resume %1\$s", "Reprendre %1\$s", "Retomar %1\$s")
+    val updateCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+
+    // Sincronizar letras sin tiempos (como en Android)
+    val sourceUser = Str("sincronizada por ti", "synced by you", "synchronisées par vous", "sincronizada por você")
+    val lyricsEstimated = Str("Sincronización estimada", "Estimated sync", "Synchronisation estimée", "Sincronização estimada")
+    val lyricsEstimating = Str("Estimando los tiempos…", "Estimating timings…", "Estimation du minutage…", "Estimando os tempos…")
+    val lyricsEstimate = Str("Estimar tiempos", "Estimate timings", "Estimer le minutage", "Estimar tempos")
+    val lyricsUnsynced = Str("Sin sincronizar", "Not synced", "Non synchronisées", "Não sincronizada")
+    val tapSync = Str("Sincronizar a mano", "Sync manually", "Synchroniser à la main", "Sincronizar manualmente")
+    val tapSyncHint = Str(
+        "Reproduce desde el inicio y pulsa «Marcar» (o Intro) justo cuando empiece a cantarse cada línea. Retroceso deshace la última.",
+        "Play from the start and press “Mark” (or Enter) right when each line begins to be sung. Backspace undoes the last one.",
+        "Lancez la lecture depuis le début et appuyez sur « Marquer » (ou Entrée) au moment où chaque ligne commence à être chantée. Retour arrière annule la dernière.",
+        "Toque desde o início e aperte “Marcar” (ou Enter) bem quando cada linha começar a ser cantada. Backspace desfaz a última.",
+    )
+    val tapSyncMark = Str("Marcar línea %1\$d de %2\$d", "Mark line %1\$d of %2\$d", "Marquer la ligne %1\$d sur %2\$d", "Marcar linha %1\$d de %2\$d")
+    val tapSyncPlayToMark = Str("Reproduce para marcar", "Play to start marking", "Lancez la lecture pour marquer", "Dê play para marcar")
+    val tapSyncSave = Str("Guardar", "Save", "Enregistrer", "Salvar")
+    val tapSyncRestart = Str("Desde el inicio", "From the start", "Depuis le début", "Desde o início")
+    val tapSyncUndo = Str("Deshacer", "Undo", "Annuler la dernière", "Desfazer")
+    val tapSyncCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+    val tapSyncSavedFolder = Str("Guardado como .lrc junto a la canción", "Saved as .lrc next to the song", "Enregistré en .lrc à côté du morceau", "Salvo como .lrc junto à música")
+    val tapSyncSavedApp = Str(
+        "Guardado en la app (no se pudo escribir en la carpeta de la canción)",
+        "Saved in the app (couldn't write to the song's folder)",
+        "Enregistré dans l'app (impossible d'écrire dans le dossier du morceau)",
+        "Salvo no app (não foi possível gravar na pasta da música)",
+    )
+    val lyricsSettings = Str("Letras", "Lyrics", "Paroles", "Letras")
+    val lyricsAutoSync = Str(
+        "Sincronizar letras sin tiempos al abrirlas",
+        "Sync untimed lyrics when opened",
+        "Synchroniser les paroles sans minutage à l'ouverture",
+        "Sincronizar letras sem tempos ao abri-las",
+    )
+    val lyricsAutoSyncDesc = Str(
+        "Estima en el equipo cuándo se canta cada línea (aproximado, sin internet). Para tiempos exactos, usa «Sincronizar a mano» en el panel de la letra.",
+        "Estimates on this computer when each line is sung (approximate, offline). For exact timings, use “Sync manually” in the lyrics panel.",
+        "Estime sur cet ordinateur quand chaque ligne est chantée (approximatif, hors ligne). Pour un minutage exact, utilisez « Synchroniser à la main » dans le panneau des paroles.",
+        "Estima no computador quando cada linha é cantada (aproximado, sem internet). Para tempos exatos, use “Sincronizar manualmente” no painel da letra.",
+    )
 
     // Google Drive
     val drive = Str("Google Drive", "Google Drive", "Google Drive", "Google Drive")
