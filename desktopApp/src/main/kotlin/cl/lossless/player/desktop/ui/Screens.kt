@@ -45,6 +45,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.zIndex
+import cl.lossless.player.desktop.AppSettings
 import cl.lossless.player.desktop.DesktopPlaylists
 import cl.lossless.player.playlist.Playlist
 import java.awt.Cursor
@@ -920,6 +921,8 @@ fun SettingsScreen(
 
         AppearanceCard()
 
+        LyricsSettingsCard()
+
         SettingsCard(t(S.equalizer)) { EqualizerPanel(Modifier.fillMaxWidth()) }
 
         ShortcutsCard()
@@ -989,6 +992,32 @@ private fun AppearanceCard() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill(t(S.sideRight), selected = !Appearance.panelLeft) { Appearance.placePanel(false) }
             Pill(t(S.sideLeft), selected = Appearance.panelLeft) { Appearance.placePanel(true) }
+        }
+    }
+}
+
+/** Letras: estimar los tiempos de las que vienen solo como texto (como en Ajustes de Android). */
+@Composable
+private fun LyricsSettingsCard() {
+    SettingsCard(t(S.lyricsSettings)) {
+        var autoSync by remember { mutableStateOf(AppSettings.lyricsAutoSync) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(t(S.lyricsAutoSync), color = Neon.Text, fontSize = 13.sp)
+                Text(t(S.lyricsAutoSyncDesc), color = Neon.Muted, fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(
+                checked = autoSync,
+                onCheckedChange = {
+                    autoSync = it
+                    AppSettings.lyricsAutoSync = it
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
+                    uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
+                ),
+            )
         }
     }
 }

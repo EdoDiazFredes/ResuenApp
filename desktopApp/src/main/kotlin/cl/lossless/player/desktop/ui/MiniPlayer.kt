@@ -46,15 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.ui.window.WindowScope
-import cl.lossless.player.desktop.DesktopLyrics
-import cl.lossless.player.desktop.LyricsResult
 import cl.lossless.player.desktop.Player
 import cl.lossless.player.desktop.S
 import cl.lossless.player.desktop.t
 import cl.lossless.player.lyrics.Lyrics
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 /** Tamaño de la ventana del mini reproductor; crece con el tamaño del texto elegido en Ajustes. */
 fun miniPlayerSize(): DpSize {
@@ -82,16 +78,9 @@ fun WindowScope.MiniPlayer(player: Player, pinned: Boolean, onPin: () -> Unit, o
     var dragging by remember { mutableStateOf<Float?>(null) }
     val shape = RoundedCornerShape(14.dp)
     val volume by player.volumeState.collectAsState()
-    val lyricsVersion = DesktopLyrics.version
-    var lyrics by remember { mutableStateOf<Lyrics?>(null) }
-    LaunchedEffect(track?.path, lyricsVersion) {
-        lyrics = null
-        if (track != null) {
-            // Ya suele estar en memoria (la cargó el panel de la vista completa).
-            val result = withContext(Dispatchers.IO) { DesktopLyrics.load(track) }
-            lyrics = (result as? LyricsResult.Found)?.lyrics?.takeIf { it.isSynced }
-        }
-    }
+    // Ya suele estar en memoria (la cargó el panel de la vista completa); si vino solo como
+    // texto, se muestra con los tiempos estimados.
+    val lyrics = rememberLyrics(track).lyrics?.takeIf { it.isSynced }
 
     Column(Modifier.fillMaxSize().glass(shape, Neon.Night)) {
         // Arriba: zona para arrastrar la ventana (carátula y textos) y los botones de la ventana.

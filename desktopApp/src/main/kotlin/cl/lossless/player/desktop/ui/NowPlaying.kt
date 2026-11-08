@@ -44,6 +44,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Pause
@@ -79,8 +80,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.lossless.player.desktop.DesktopEqualizer
-import cl.lossless.player.desktop.DesktopLyrics
 import cl.lossless.player.desktop.LyricsResult
+import cl.lossless.player.desktop.LyricsSync
 import cl.lossless.player.desktop.Player
 import cl.lossless.player.desktop.PlayerState
 import cl.lossless.player.desktop.RepeatMode
@@ -88,9 +89,9 @@ import cl.lossless.player.desktop.S
 import cl.lossless.player.desktop.Track
 import cl.lossless.player.desktop.t
 import cl.lossless.player.lyrics.Lyrics
+import cl.lossless.player.lyrics.LyricsAligner
 import cl.lossless.player.lyrics.LyricsSource
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 /** Panel derecho de la maqueta: pestañas Reproduciendo (carátula, formato y letra) y Cola. */
 @Composable
@@ -102,6 +103,10 @@ fun RightPanel(
     onPlayQueueItem: (Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Posición exacta en este instante (para marcar líneas al sincronizar a mano). */
+    livePosition: () -> Long = { positionMs },
+    /** Vuelve al inicio de la pista y la hace sonar. */
+    onRestart: () -> Unit = { onSeek(0) },
 ) {
     var queueTab by remember { mutableStateOf(false) }
     Row(modifier) {
@@ -119,7 +124,7 @@ fun RightPanel(
             if (queueTab) {
                 QueueList(state, onPlayQueueItem)
             } else {
-                NowPlayingContent(track, positionMs, onSeek)
+                NowPlayingContent(track, state.playing, positionMs, onSeek, livePosition, onRestart)
             }
         }
     }
@@ -142,14 +147,16 @@ private fun PanelTab(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun NowPlayingContent(track: Track, positionMs: Long, onSeek: (Long) -> Unit) {
-    val lyricsVersion = DesktopLyrics.version
+private fun NowPlayingContent(
+    track: Track,
+    playing: Boolean,
+    positionMs: Long,
+    onSeek: (Long) -> Unit,
+    livePosition: () -> Long,
+    onRestart: () -> Unit,
+) {
     var retry by remember(track.path) { mutableIntStateOf(0) }
-    var lyrics by remember(track.path, lyricsVersion) { mutableStateOf<LyricsResult?>(null) }
-    LaunchedEffect(track.path, lyricsVersion, retry) {
-        lyrics = null
-        lyrics = withContext(Dispatchers.IO) { DesktopLyrics.load(track) }
-    }
+    val lyrics = rememberLyrics(track, retry)
     val actions = LocalTrackActions.current
     // La carátula crece con el ancho del panel (se ajusta arrastrando su borde), sin pasar
     // de la mitad del alto para dejar sitio a la letra.
@@ -186,35 +193,107 @@ private fun NowPlayingContent(track: Track, positionMs: Long, onSeek: (Long) -> 
                 track.specsLabel?.let { NeonBadge(it, color = Neon.Text) }
             }
             Spacer(Modifier.height(16.dp))
-            LyricsCard(lyrics, positionMs, onSeek, Modifier.weight(1f).fillMaxWidth(), onSearch = actions?.let { a -> { a.findLyrics(track) } }, onRetry = { retry++ })
+            LyricsCard(
+                track, lyrics, playing, positionMs, onSeek, livePosition, onRestart,
+                Modifier.weight(1f).fillMaxWidth(),
+                onSearch = actions?.let { a -> { a.findLyrics(track) } },
+                onRetry = { retry++ },
+            )
         }
     }
 }
 
 @Composable
 private fun LyricsCard(
-    result: LyricsResult?,
+    track: Track,
+    loaded: LoadedLyrics,
+    playing: Boolean,
     positionMs: Long,
     onSeek: (Long) -> Unit,
+    livePosition: () -> Long,
+    onRestart: () -> Unit,
     modifier: Modifier,
     onSearch: (() -> Unit)?,
     onRetry: () -> Unit,
 ) {
-    val found = (result as? LyricsResult.Found)?.lyrics
+    val result = loaded.result
+    val found = loaded.lyrics
+    var editing by remember(track.path) { mutableStateOf(false) }
+    // Aviso breve tras guardar lo sincronizado a mano (dónde quedó).
+    var savedNote by remember(track.path) { mutableStateOf<String?>(null) }
+    LaunchedEffect(savedNote) {
+        if (savedNote != null) {
+            delay(5_000)
+            savedNote = null
+        }
+    }
+    val savedFolder = t(S.tapSyncSavedFolder)
+    val savedApp = t(S.tapSyncSavedApp)
+    // Líneas para sincronizar a mano: las de la letra (con o sin tiempos), sin rótulos ni vacías.
+    val syncLines = remember(found) {
+        when {
+            found == null -> emptyList()
+            found.isSynced && !found.estimated -> found.synced.orEmpty().map { it.text }.filter { it.isNotBlank() }
+            else -> LyricsAligner.splitLines(found.plain.orEmpty()).map { it.text }
+        }
+    }
     Column(modifier.glass(RoundedCornerShape(12.dp), Neon.Card.copy(alpha = 0.6f)).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.AutoMirrored.Rounded.Notes, null, tint = Neon.Accent, modifier = Modifier.size(12.dp))
             Spacer(Modifier.width(4.dp))
-            SectionLabel(if (found?.isSynced == true) t(S.lyricsSynced) else t(S.lyrics), Modifier.weight(1f))
-            if (found != null) {
+            SectionLabel(
+                when {
+                    editing -> t(S.tapSync)
+                    found?.estimated == true -> t(S.lyricsEstimated)
+                    found?.isSynced == true -> t(S.lyricsSynced)
+                    else -> t(S.lyrics)
+                },
+                Modifier.weight(1f),
+            )
+            if (found != null && !editing) {
                 Text(sourceLabel(found.source).uppercase(), color = Neon.Accent, fontFamily = Mono, fontSize = 10.sp, maxLines = 1)
             }
-            if (onSearch != null) SmallIconButton(Icons.Rounded.Search, t(S.searchLyrics), size = 14.dp, onClick = onSearch)
+            if (syncLines.isNotEmpty() && !editing) {
+                SmallIconButton(Icons.Rounded.TouchApp, t(S.tapSync), size = 14.dp) { editing = true }
+            }
+            if (onSearch != null && !editing) SmallIconButton(Icons.Rounded.Search, t(S.searchLyrics), size = 14.dp, onClick = onSearch)
+        }
+        // Estado de la sincronización de una letra que vino sin tiempos.
+        val status = when {
+            editing -> null
+            savedNote != null -> savedNote
+            loaded.estimating -> t(S.lyricsEstimating)
+            found != null && !found.isSynced && !found.plain.isNullOrBlank() -> t(S.lyricsUnsynced)
+            else -> null
+        }
+        if (status != null) {
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(status, color = if (loaded.estimating || savedNote != null) Neon.Accent else Neon.Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                if (!loaded.estimating && savedNote == null) {
+                    Text(
+                        t(S.lyricsEstimate),
+                        color = Neon.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = loaded.estimateNow).padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(Neon.Border))
         Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
             when {
+                editing -> TapSyncEditor(
+                    lines = syncLines,
+                    playing = playing,
+                    livePosition = livePosition,
+                    onRestart = onRestart,
+                    onSave = { lines ->
+                        val toFolder = LyricsSync.saveUser(track, lines)
+                        savedNote = if (toFolder) savedFolder else savedApp
+                        editing = false
+                    },
+                    onClose = { editing = false },
+                )
                 result == null -> CenteredNote(t(S.lyricsLoading))
                 result == LyricsResult.None -> CenteredNote(t(S.lyricsNone))
                 result is LyricsResult.Offline -> RetryNote(t(S.lyricsOffline) + (result.detail?.let { "\n($it)" } ?: ""), onRetry)
@@ -241,6 +320,7 @@ private fun sourceLabel(source: LyricsSource): String = t(
         LyricsSource.SIDECAR -> S.sourceSidecar
         LyricsSource.LRCLIB -> S.sourceLrclib
         LyricsSource.LYRICS_OVH -> S.sourceLyricsOvh
+        LyricsSource.USER -> S.sourceUser
         else -> S.sourceEmbedded
     },
 )

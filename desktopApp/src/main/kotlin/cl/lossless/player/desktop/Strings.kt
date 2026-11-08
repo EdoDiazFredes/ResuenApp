@@ -402,4 +402,44 @@ object S {
     val updateResume = Str("Reanudar descarga", "Resume download", "Reprendre le téléchargement", "Retomar download")
     val updateResumePill = Str("Reanudar %1\$s", "Resume %1\$s", "Reprendre %1\$s", "Retomar %1\$s")
     val updateCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+
+    // Sincronizar letras sin tiempos (como en Android)
+    val sourceUser = Str("sincronizada por ti", "synced by you", "synchronisées par vous", "sincronizada por você")
+    val lyricsEstimated = Str("Sincronización estimada", "Estimated sync", "Synchronisation estimée", "Sincronização estimada")
+    val lyricsEstimating = Str("Estimando los tiempos…", "Estimating timings…", "Estimation du minutage…", "Estimando os tempos…")
+    val lyricsEstimate = Str("Estimar tiempos", "Estimate timings", "Estimer le minutage", "Estimar tempos")
+    val lyricsUnsynced = Str("Sin sincronizar", "Not synced", "Non synchronisées", "Não sincronizada")
+    val tapSync = Str("Sincronizar a mano", "Sync manually", "Synchroniser à la main", "Sincronizar manualmente")
+    val tapSyncHint = Str(
+        "Reproduce desde el inicio y pulsa «Marcar» (o Intro) justo cuando empiece a cantarse cada línea. Retroceso deshace la última.",
+        "Play from the start and press “Mark” (or Enter) right when each line begins to be sung. Backspace undoes the last one.",
+        "Lancez la lecture depuis le début et appuyez sur « Marquer » (ou Entrée) au moment où chaque ligne commence à être chantée. Retour arrière annule la dernière.",
+        "Toque desde o início e aperte “Marcar” (ou Enter) bem quando cada linha começar a ser cantada. Backspace desfaz a última.",
+    )
+    val tapSyncMark = Str("Marcar línea %1\$d de %2\$d", "Mark line %1\$d of %2\$d", "Marquer la ligne %1\$d sur %2\$d", "Marcar linha %1\$d de %2\$d")
+    val tapSyncPlayToMark = Str("Reproduce para marcar", "Play to start marking", "Lancez la lecture pour marquer", "Dê play para marcar")
+    val tapSyncSave = Str("Guardar", "Save", "Enregistrer", "Salvar")
+    val tapSyncRestart = Str("Desde el inicio", "From the start", "Depuis le début", "Desde o início")
+    val tapSyncUndo = Str("Deshacer", "Undo", "Annuler la dernière", "Desfazer")
+    val tapSyncCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+    val tapSyncSavedFolder = Str("Guardado como .lrc junto a la canción", "Saved as .lrc next to the song", "Enregistré en .lrc à côté du morceau", "Salvo como .lrc junto à música")
+    val tapSyncSavedApp = Str(
+        "Guardado en la app (no se pudo escribir en la carpeta de la canción)",
+        "Saved in the app (couldn't write to the song's folder)",
+        "Enregistré dans l'app (impossible d'écrire dans le dossier du morceau)",
+        "Salvo no app (não foi possível gravar na pasta da música)",
+    )
+    val lyricsSettings = Str("Letras", "Lyrics", "Paroles", "Letras")
+    val lyricsAutoSync = Str(
+        "Sincronizar letras sin tiempos al abrirlas",
+        "Sync untimed lyrics when opened",
+        "Synchroniser les paroles sans minutage à l'ouverture",
+        "Sincronizar letras sem tempos ao abri-las",
+    )
+    val lyricsAutoSyncDesc = Str(
+        "Estima en el equipo cuándo se canta cada línea (aproximado, sin internet). Para tiempos exactos, usa «Sincronizar a mano» en el panel de la letra.",
+        "Estimates on this computer when each line is sung (approximate, offline). For exact timings, use “Sync manually” in the lyrics panel.",
+        "Estime sur cet ordinateur quand chaque ligne est chantée (approximatif, hors ligne). Pour un minutage exact, utilisez « Synchroniser à la main » dans le panneau des paroles.",
+        "Estima no computador quando cada linha é cantada (aproximado, sem internet). Para tempos exatos, use “Sincronizar manualmente” no painel da letra.",
+    )
 }
