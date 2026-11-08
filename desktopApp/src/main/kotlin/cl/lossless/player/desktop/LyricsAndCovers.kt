@@ -60,7 +60,8 @@ object DesktopLyrics {
     /** Bloqueante: llamar desde un hilo de E/S. */
     fun load(track: Track): LyricsResult {
         memory[track.path]?.let { return it }
-        val result = readManual(track) ?: readSidecar(track) ?: readEmbedded(track) ?: readCached(track) ?: fetchOnline(track)
+        val result = LyricsSync.readUser(track)?.let { LyricsResult.Found(it) }
+            ?: readManual(track) ?: readSidecar(track) ?: readEmbedded(track) ?: readCached(track) ?: fetchOnline(track)
         if (!result.isTransient) memory[track.path] = result
         return result
     }
@@ -74,6 +75,13 @@ object DesktopLyrics {
     fun setManual(track: Track, record: LrcLibClient.Record) {
         val text = record.syncedLyrics?.takeIf { it.isNotBlank() } ?: record.plainLyrics.orEmpty()
         runCatching { manualFile(track).writeText(text) }
+        // La letra elegida reemplaza a la que se sincronizó a mano antes.
+        LyricsSync.clearUser(track)
+        changed(track)
+    }
+
+    /** La letra de [track] cambió (elegida o sincronizada a mano): se vuelve a cargar. */
+    fun changed(track: Track) {
         memory.remove(track.path)
         version++
     }
