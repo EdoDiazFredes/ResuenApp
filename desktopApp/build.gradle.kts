@@ -74,6 +74,23 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
+// Formatos que la app ofrece abrir ("Abrir con" en Windows, Finder en macOS). Un archivo abierto
+// así con la app ya en marcha se pasa a la ventana abierta (ver SingleInstance.kt).
+val audioFileTypes = listOf(
+    "flac" to "audio/flac",
+    "m4a" to "audio/mp4",
+    "alac" to "audio/mp4",
+    "wav" to "audio/wav",
+    "aif" to "audio/aiff",
+    "aiff" to "audio/aiff",
+    "mp3" to "audio/mpeg",
+    "aac" to "audio/aac",
+    "ogg" to "audio/ogg",
+    "oga" to "audio/ogg",
+    "opus" to "audio/opus",
+    "dsf" to "audio/x-dsf",
+)
+
 compose.desktop {
     application {
         mainClass = "cl.lossless.player.desktop.MainKt"
@@ -98,6 +115,7 @@ compose.desktop {
                 iconFile.set(project.file("icons/resuenapp.ico"))
                 // Fijo: permite que una versión nueva del .msi reemplace a la anterior.
                 upgradeUuid = "6f1c2a8e-3b4d-4c5e-9f60-7a8b9c0d1e2f"
+                audioFileTypes.forEach { (ext, mime) -> fileAssociation(mime, ext, "Audio ${ext.uppercase()}") }
             }
 
             // .dmg sin firma de Apple: al abrirla por primera vez hay que autorizarla en
@@ -109,6 +127,7 @@ compose.desktop {
                 minimumSystemVersion = "11.0"
                 // Generado desde icons/resuenapp.svg con el margen de la plantilla de íconos de macOS.
                 iconFile.set(project.file("icons/resuenapp.icns"))
+                audioFileTypes.forEach { (ext, mime) -> fileAssociation(mime, ext, "Audio ${ext.uppercase()}") }
             }
         }
     }
