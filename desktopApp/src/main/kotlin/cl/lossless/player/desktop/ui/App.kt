@@ -305,6 +305,11 @@ private fun Library(player: Player, searchFocus: FocusRequester, language: Lang?
             onPlayQueueItem = { player.playQueue(state.queue, it) },
             onClose = { panelOpen = false },
             modifier = Modifier.width(Appearance.panelWidth.dp).fillMaxHeight(),
+            livePosition = player::positionMs,
+            onRestart = {
+                player.seek(0)
+                if (!player.state.value.playing) player.toggle()
+            },
         )
         if (left) PanelResizeHandle(density) { dx -> Appearance.resizePanel(Appearance.panelWidth + dx) }
     }
