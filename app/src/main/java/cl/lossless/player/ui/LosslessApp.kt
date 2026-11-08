@@ -187,8 +187,8 @@ fun LosslessApp(
     }
 
     // ---------- Acciones de pista ----------
-    var addToPlaylistFor by remember { mutableStateOf<Track?>(null) }
-    var createPlaylistWith by remember { mutableStateOf<Track?>(null) }
+    var addToPlaylistFor by remember { mutableStateOf<PlaylistRequest?>(null) }
+    var createPlaylistWith by remember { mutableStateOf<PlaylistRequest?>(null) }
     val favorites = remember(playlists) { playlists.firstOrNull { it.isFavorites }?.trackUris?.toSet().orEmpty() }
     fun artworkFor(track: Track) = state.coverFor(track)?.let { Uri.fromFile(it.file) }
     val trackActions = TrackActions(
@@ -200,7 +200,8 @@ fun LosslessApp(
         playNext = { playerActions.playNext(it, artworkFor(it)) },
         enqueue = { playerActions.enqueue(it, artworkFor(it)) },
         toggleFavorite = { playlistsVm.toggleFavorite(it.uri.toString()) },
-        addToPlaylist = { addToPlaylistFor = it },
+        addToPlaylist = { addToPlaylistFor = PlaylistRequest(listOf(it)) },
+        addAllToPlaylist = { tracks, onAdded -> if (tracks.isNotEmpty()) addToPlaylistFor = PlaylistRequest(tracks, onAdded) },
     )
 
     var destination by rememberSaveable { mutableStateOf(Destination.LIBRARY) }
@@ -431,26 +432,36 @@ fun LosslessApp(
     state.tagEdit?.let { edit ->
         TagEditDialog(edit, onDismiss = vm::closeTagEditor, onSave = vm::saveTags)
     }
-    addToPlaylistFor?.let { track ->
+    addToPlaylistFor?.let { request ->
         AddToPlaylistDialog(
             playlists = playlists,
             onSelect = { p ->
-                playlistsVm.add(p.id, track.uri.toString())
+                playlistsVm.addAll(p.id, request.uris)
                 addToPlaylistFor = null
-                Toast.makeText(context, context.getString(R.string.library_added_to_playlist, p.displayName(context)), Toast.LENGTH_SHORT).show()
+                request.onAdded()
+                val name = p.displayName(context)
+                val message = if (request.tracks.size == 1) context.getString(R.string.library_added_to_playlist, name)
+                else context.resources.getQuantityString(R.plurals.library_added_many_to_playlist, request.tracks.size, request.tracks.size, name)
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             },
-            onCreateNew = { createPlaylistWith = track; addToPlaylistFor = null },
+            onCreateNew = { createPlaylistWith = request; addToPlaylistFor = null },
             onDismiss = { addToPlaylistFor = null },
         )
     }
-    createPlaylistWith?.let { track ->
+    createPlaylistWith?.let { request ->
         PlaylistNameDialog(
             title = stringResource(R.string.library_new_playlist),
             onConfirm = { name ->
-                playlistsVm.create(name, listOf(track.uri.toString()))
+                playlistsVm.create(name, request.uris)
                 createPlaylistWith = null
+                request.onAdded()
             },
             onDismiss = { createPlaylistWith = null },
         )
     }
+}
+
+/** Canciones que esperan elegir playlist; [onAdded] corre al añadirlas (p. ej. para quitar la selección). */
+private class PlaylistRequest(val tracks: List<Track>, val onAdded: () -> Unit = {}) {
+    val uris: List<String> get() = tracks.map { it.uri.toString() }.distinct()
 }
