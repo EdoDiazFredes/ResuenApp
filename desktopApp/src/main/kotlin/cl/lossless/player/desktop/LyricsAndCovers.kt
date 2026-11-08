@@ -10,6 +10,7 @@ import cl.lossless.player.lyrics.EmbeddedLyricsReader
 import cl.lossless.player.lyrics.LrcLibClient
 import cl.lossless.player.lyrics.LrcParser
 import cl.lossless.player.lyrics.Lyrics
+import cl.lossless.player.lyrics.LyricsOvhClient
 import cl.lossless.player.lyrics.LyricsSource
 import cl.lossless.player.lyrics.TrackMetadataCleaner
 import org.jaudiotagger.audio.AudioFileIO
@@ -31,7 +32,13 @@ import javax.imageio.ImageIO
 sealed interface LyricsResult {
     data class Found(val lyrics: Lyrics) : LyricsResult
     data object None : LyricsResult
-    data object Offline : LyricsResult
+    /** No hubo respuesta (sin red, DNS, TLS, tiempo agotado). [detail] ayuda a diagnosticar. */
+    data class Offline(val detail: String? = null) : LyricsResult
+    /** LRCLIB respondió, pero con un error suyo (saturado o caído): no es la conexión del equipo. */
+    data class ServerError(val code: Int) : LyricsResult
+
+    /** Fallo pasajero: no se guarda y se puede reintentar. */
+    val isTransient: Boolean get() = this is Offline || this is ServerError
 }
 
 /**
@@ -40,7 +47,9 @@ sealed interface LyricsResult {
  */
 object DesktopLyrics {
 
-    private val client = LrcLibClient(userAgent = "ResuenApp/1.0 (Windows lossless music player)")
+    private val userAgent = "ResuenApp/1.2 (${System.getProperty("os.name") ?: "desktop"} lossless music player)"
+    private val client = LrcLibClient(userAgent = userAgent)
+    private val fallback = LyricsOvhClient(userAgent = userAgent)
     private val memory = ConcurrentHashMap<String, LyricsResult>()
     private val cacheDir get() = File(AppDirs.data, "lyrics").apply { mkdirs() }
 
@@ -52,7 +61,7 @@ object DesktopLyrics {
     fun load(track: Track): LyricsResult {
         memory[track.path]?.let { return it }
         val result = readManual(track) ?: readSidecar(track) ?: readEmbedded(track) ?: readCached(track) ?: fetchOnline(track)
-        if (result != LyricsResult.Offline) memory[track.path] = result
+        if (!result.isTransient) memory[track.path] = result
         return result
     }
 
@@ -111,6 +120,7 @@ object DesktopLyrics {
         val text = runCatching { f.readText() }.getOrNull() ?: return null
         if (text == NONE_MARK) return LyricsResult.None
         if (text == INSTRUMENTAL_MARK) return LyricsResult.Found(Lyrics(null, null, LyricsSource.LRCLIB, instrumental = true))
+        if (text.startsWith(OVH_MARK)) return LyricsResult.Found(Lyrics(null, text.removePrefix(OVH_MARK), LyricsSource.LYRICS_OVH))
         return LrcParser.toLyrics(text, LyricsSource.LRCLIB)?.let { LyricsResult.Found(it) }
     }
 
@@ -118,6 +128,8 @@ object DesktopLyrics {
         val (title, artist) = TrackMetadataCleaner.clean(track.title, track.artist)
         if (title.isBlank()) return LyricsResult.None
         val durationSec = track.durationMs / 1000
+        // LRCLIB primero (puede traer tiempos); si falla o no tiene nada, Lyrics.ovh (como en Android).
+        var lrclibError: LyricsResult? = null
         val record = try {
             var exact: LrcLibClient.Record? = null
             if (artist.isNotBlank() && durationSec > 0) {
@@ -125,28 +137,61 @@ object DesktopLyrics {
             }
             exact?.takeIf { it.hasLyrics || it.instrumental }
                 ?: LrcLibClient.pickBest(client.search(title, artist), title, artist, durationSec)
+        } catch (e: LrcLibClient.ServerError) {
+            System.err.println("LRCLIB respondió HTTP ${e.code} para ${track.path}")
+            lrclibError = LyricsResult.ServerError(e.code)
+            null
         } catch (e: IOException) {
-            return LyricsResult.Offline
+            System.err.println("Sin respuesta de LRCLIB para ${track.path}: $e")
+            lrclibError = LyricsResult.Offline(describe(e))
+            null
         }
         val f = cacheFile(track)
-        if (record == null) {
-            runCatching { f.writeText(NONE_MARK) }
-            return LyricsResult.None
+        if (record != null) {
+            val synced = record.syncedLyrics
+            val plain = record.plainLyrics
+            val text = when {
+                !synced.isNullOrBlank() -> synced
+                !plain.isNullOrBlank() -> plain
+                else -> null
+            }
+            if (text != null) {
+                runCatching { f.writeText(text) }
+                LrcParser.toLyrics(text, LyricsSource.LRCLIB)?.let { return LyricsResult.Found(it) }
+            } else if (record.instrumental) {
+                runCatching { f.writeText(INSTRUMENTAL_MARK) }
+                return LyricsResult.Found(Lyrics(null, null, LyricsSource.LRCLIB, instrumental = true))
+            }
         }
-        val synced = record.syncedLyrics
-        val plain = record.plainLyrics
-        val text = when {
-            !synced.isNullOrBlank() -> synced
-            !plain.isNullOrBlank() -> plain
-            else -> null
+
+        var fallbackFailed = false
+        val fromOvh = try {
+            fallback.get(artist, title)
+        } catch (e: IOException) {
+            fallbackFailed = true
+            null
         }
-        if (text == null) {
-            runCatching { f.writeText(if (record.instrumental) INSTRUMENTAL_MARK else NONE_MARK) }
-            return if (record.instrumental) LyricsResult.Found(Lyrics(null, null, LyricsSource.LRCLIB, instrumental = true))
-            else LyricsResult.None
+        if (fromOvh != null) {
+            // Se guarda con su marca para recordar de dónde vino.
+            runCatching { f.writeText(OVH_MARK + fromOvh) }
+            return LyricsResult.Found(Lyrics(null, fromOvh, LyricsSource.LYRICS_OVH))
         }
-        runCatching { f.writeText(text) }
-        return LrcParser.toLyrics(text, LyricsSource.LRCLIB)?.let { LyricsResult.Found(it) } ?: LyricsResult.None
+        return when {
+            // Algo no respondió: no se guarda "sin letra" para reintentar la próxima vez.
+            lrclibError != null -> lrclibError
+            fallbackFailed -> LyricsResult.None
+            else -> {
+                runCatching { f.writeText(NONE_MARK) }
+                LyricsResult.None
+            }
+        }
+    }
+
+    private fun describe(e: IOException): String = when (e) {
+        is java.net.UnknownHostException -> "DNS"
+        is java.net.SocketTimeoutException -> "timeout"
+        is javax.net.ssl.SSLException -> "TLS: ${e.message.orEmpty()}".trim().removeSuffix(":")
+        else -> e.javaClass.simpleName + (e.message?.let { ": $it" } ?: "")
     }
 
     /** Los .lrc suelen ser UTF-8; los antiguos de Windows, CP1252. */
@@ -161,6 +206,7 @@ object DesktopLyrics {
 
     private const val NONE_MARK = "\u0000none"
     private const val INSTRUMENTAL_MARK = "\u0000instrumental"
+    private const val OVH_MARK = "\u0000ovh\n"
 }
 
 /** Carátulas: la incrustada en el archivo o cover.jpg/folder.jpg en la carpeta, reducidas. */

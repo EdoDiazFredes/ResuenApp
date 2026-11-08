@@ -431,17 +431,21 @@ private fun ColumnScope.LyricsSearchDialog(track: Track, onDismiss: () -> Unit) 
     var results by remember { mutableStateOf<List<LrcLibClient.Record>?>(null) }
     var searching by remember { mutableStateOf(false) }
     var offline by remember { mutableStateOf(false) }
+    var serverError by remember { mutableStateOf<Int?>(null) }
 
     fun search() {
         if (searching || title.isBlank()) return
         searching = true
         offline = false
+        serverError = null
         scope.launch {
-            val found = withContext(Dispatchers.IO) {
-                runCatching { DesktopLyrics.search(title, artist) }.getOrNull()
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching { DesktopLyrics.search(title, artist) }
             }
-            results = found ?: emptyList()
-            offline = found == null
+            results = outcome.getOrNull() ?: emptyList()
+            val error = outcome.exceptionOrNull()
+            serverError = (error as? LrcLibClient.ServerError)?.code
+            offline = error != null && serverError == null
             searching = false
         }
     }
@@ -459,6 +463,7 @@ private fun ColumnScope.LyricsSearchDialog(track: Track, onDismiss: () -> Unit) 
         val list = results
         when {
             searching || list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Spinner() }
+            serverError != null -> Note(t(S.lyricsServerError, serverError!!))
             offline -> Note(t(S.lyricsOffline))
             list.isEmpty() -> Note(t(S.lyricsNone))
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
