@@ -18,6 +18,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      # Cliente OAuth de Google (App de escritorio) para Google Drive; sin él, Drive queda desactivado.
+      GOOGLE_DESKTOP_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
+      GOOGLE_DESKTOP_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
     steps:
       # Historial completo: la versión es 1.2.<cantidad de commits>.
       - uses: actions/checkout@v4

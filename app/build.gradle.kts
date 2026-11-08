@@ -81,6 +81,10 @@ dependencies {
     // la red elegida (solo Wi-Fi, solo datos o ambas).
     implementation("androidx.work:work-runtime-ktx:2.10.1")
 
+    // Google Drive: inicio de sesión con Google Play Services (AuthorizationClient) para pedir el
+    // permiso de solo lectura de Drive. La API de Drive se usa con el cliente de :shared.
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+
     testImplementation("junit:junit:4.13.2")
     // org.json real: el de android.jar en los tests de JVM son solo firmas vacías.
     testImplementation("org.json:json:20240303")

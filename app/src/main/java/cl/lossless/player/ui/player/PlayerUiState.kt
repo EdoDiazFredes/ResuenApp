@@ -174,4 +174,21 @@ class PlayerActions(private val player: Player?) {
         if (p.mediaItemCount == 0) return playTracks(listOf(track), 0) { artwork }
         p.addMediaItem(track.toMediaItem(artwork))
     }
+
+    /**
+     * Suma [track] al final si la cola sigue siendo la que empezó con [firstMediaId] (las pistas
+     * de Drive llegan a medida que se descargan). Si la cola ya se había terminado, sigue con ella.
+     * false si el usuario puso otra música.
+     */
+    fun appendIfQueueStartsWith(track: Track, artwork: Uri?, firstMediaId: String): Boolean {
+        val p = player ?: return false
+        if (p.mediaItemCount == 0 || p.getMediaItemAt(0).mediaId != firstMediaId) return false
+        val ended = p.playbackState == Player.STATE_ENDED
+        p.addMediaItem(track.toMediaItem(artwork))
+        if (ended) {
+            p.seekTo(p.mediaItemCount - 1, 0L)
+            p.play()
+        }
+        return true
+    }
 }

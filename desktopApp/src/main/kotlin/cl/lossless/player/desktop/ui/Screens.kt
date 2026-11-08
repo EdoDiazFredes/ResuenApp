@@ -259,7 +259,7 @@ fun GhostButton(icon: ImageVector?, label: String, onClick: () -> Unit) {
 
 /** Cabecera de una vista: ruta monoespaciada en cian, título grande, resumen y acción. */
 @Composable
-private fun ViewHeader(
+fun ViewHeader(
     title: String,
     eyebrow: String? = null,
     eyebrowIcon: ImageVector = Icons.Rounded.Folder,
@@ -1078,7 +1078,7 @@ private fun SubLabel(text: String) {
 }
 
 @Composable
-private fun Pill(label: String, selected: Boolean, fontFamily: FontFamily? = null, onClick: () -> Unit) {
+fun Pill(label: String, selected: Boolean, fontFamily: FontFamily? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(50)
     Text(
         label,
