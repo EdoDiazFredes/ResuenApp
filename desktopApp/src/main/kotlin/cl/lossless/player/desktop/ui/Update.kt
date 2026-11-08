@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ fun UpdatePill(onInstall: (AvailableUpdate) -> Unit) {
     val (label, update) = when (val s = DesktopUpdater.state) {
         is UpdateState.Available -> t(S.updatePill, s.update.version) to s.update
         is UpdateState.Downloading -> t(S.updateDownloading, (s.progress * 100).toInt()) to null
+        is UpdateState.Failed -> (s.update ?: return).let { t(S.updateResumePill, it.version) to it }
         else -> return
     }
     val shape = RoundedCornerShape(50)
@@ -64,7 +66,8 @@ fun UpdateSettings(onCheck: () -> Unit, onInstall: (AvailableUpdate) -> Unit) {
             UpdateState.UpToDate -> t(S.updateUpToDate)
             is UpdateState.Available -> t(S.updateAvailable, state.update.version)
             is UpdateState.Downloading -> t(S.updateDownloading, (state.progress * 100).toInt())
-            is UpdateState.Failed -> t(S.updateFailed, state.message)
+            is UpdateState.Failed ->
+                if (state.update != null) t(S.updateDownloadFailed, state.message) else t(S.updateFailed, state.message)
         }
         if (status != null) {
             Text(
@@ -94,7 +97,19 @@ fun UpdateSettings(onCheck: () -> Unit, onInstall: (AvailableUpdate) -> Unit) {
         }
         when (state) {
             is UpdateState.Available -> PrimaryButton(Icons.Rounded.SystemUpdateAlt, t(S.updateInstall)) { onInstall(state.update) }
-            UpdateState.Checking, is UpdateState.Downloading -> Unit
+            is UpdateState.Failed -> {
+                val failed = state.update
+                if (failed != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PrimaryButton(Icons.Rounded.SystemUpdateAlt, t(S.updateResume)) { onInstall(failed) }
+                        GhostButton(Icons.Rounded.Refresh, t(S.updateCheck), onCheck)
+                    }
+                } else {
+                    GhostButton(Icons.Rounded.Refresh, t(S.updateCheck), onCheck)
+                }
+            }
+            is UpdateState.Downloading -> GhostButton(Icons.Rounded.Close, t(S.updateCancel)) { DesktopUpdater.cancel() }
+            UpdateState.Checking -> Unit
             else -> GhostButton(Icons.Rounded.Refresh, t(S.updateCheck), onCheck)
         }
     }
