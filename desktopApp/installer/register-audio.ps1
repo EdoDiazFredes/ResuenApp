@@ -26,6 +26,10 @@ function Call($obj, [string]$name, [object[]]$params = @()) {
     }
     $obj.GetType().InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $obj, $plain)
 }
+function SetField($rec, [string]$prop, [int]$field, $value) {
+    $v = if ($value -is [int]) { [int]$value } else { [string]$value }
+    $rec.GetType().InvokeMember($prop, [Reflection.BindingFlags]::SetProperty, $null, $rec, [object[]]@([int]$field, $v)) | Out-Null
+}
 function Rows($db, [string]$sql, [int]$columns) {
     $view = Call $db "OpenView" @($sql)
     Call $view "Execute" @() | Out-Null
@@ -97,12 +101,13 @@ $n = 0
 foreach ($e in $entries) {
     $n++
     $rec = Call $installer "CreateRecord" @([int]6)
-    Call $rec "SetString" @([int]1, [string]"ResuenAppAudio$n") | Out-Null
-    Call $rec "SetInteger" @([int]2, [int]-1) | Out-Null   # -1: HKCU en instalación por usuario
-    Call $rec "SetString" @([int]3, [string]$e[0]) | Out-Null
-    if ($null -ne $e[1]) { Call $rec "SetString" @([int]4, [string]$e[1]) | Out-Null }
-    Call $rec "SetString" @([int]5, [string]$e[2]) | Out-Null
-    Call $rec "SetString" @([int]6, [string]$component) | Out-Null
+    # StringData e IntegerData son propiedades del registro (no métodos).
+    SetField $rec "StringData" 1 "ResuenAppAudio$n"
+    SetField $rec "IntegerData" 2 -1   # -1: HKCU en instalación por usuario
+    SetField $rec "StringData" 3 $e[0]
+    if ($null -ne $e[1]) { SetField $rec "StringData" 4 $e[1] }
+    SetField $rec "StringData" 5 $e[2]
+    SetField $rec "StringData" 6 $component
     Call $insert "Execute" @($rec) | Out-Null
 }
 Call $insert "Close" @() | Out-Null
