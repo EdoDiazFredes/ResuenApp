@@ -26,10 +26,6 @@ function Call($obj, [string]$name, [object[]]$params = @()) {
     }
     $obj.GetType().InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $obj, $plain)
 }
-function SetField($rec, [string]$prop, [int]$field, $value) {
-    $v = if ($value -is [int]) { [int]$value } else { [string]$value }
-    $rec.GetType().InvokeMember($prop, [Reflection.BindingFlags]::SetProperty, $null, $rec, [object[]]@([int]$field, $v)) | Out-Null
-}
 function Rows($db, [string]$sql, [int]$columns) {
     $view = Call $db "OpenView" @($sql)
     Call $view "Execute" @() | Out-Null
@@ -63,7 +59,7 @@ $tableRows = Rows $db "SELECT ``Name`` FROM ``_Tables``" 1
 $tables = $tableRows | ForEach-Object { $_[0] }
 if ($tables -contains "Registry") {
     $existing = Rows $db "SELECT ``Root``, ``Key``, ``Name``, ``Value`` FROM ``Registry``" 4
-    $existing | ForEach-Object { Write-Output "jpackage: [$($_[0])] $($_[1]) | $($_[2]) = $($_[3])" }
+    $existing | Where-Object { $_[0] -eq "0" } | ForEach-Object { Write-Output "jpackage: [$($_[0])] $($_[1]) | $($_[2]) = $($_[3])" }
 } else {
     Call (Call $db "OpenView" @("CREATE TABLE ``Registry`` (``Registry`` CHAR(72) NOT NULL, ``Root`` SHORT NOT NULL, ``Key`` CHAR(255) NOT NULL LOCALIZABLE, ``Name`` CHAR(255) LOCALIZABLE, ``Value`` CHAR(0) LOCALIZABLE, ``Component_`` CHAR(72) NOT NULL PRIMARY KEY ``Registry``)")) "Execute" @() | Out-Null
 }
@@ -96,20 +92,20 @@ foreach ($ext in $extensions) {
     $entries += , @("Software\Classes\Applications\ResuenApp.exe\SupportedTypes", ".$ext", "ResuenApp")
 }
 
-$insert = Call $db "OpenView" @("INSERT INTO ``Registry`` (``Registry``, ``Root``, ``Key``, ``Name``, ``Value``, ``Component_``) VALUES (?, ?, ?, ?, ?, ?)")
+# Root 1 = HKCU (la instalación es por usuario). Filas como literales SQL (sin objetos Record, que por COM dan errores de tipo). Ninguna clave ni
+# valor lleva comillas simples; si alguna llegara a tenerla, mejor fallar que escribir algo roto.
 $n = 0
 foreach ($e in $entries) {
     $n++
-    $rec = Call $installer "CreateRecord" @([int]6)
-    # StringData e IntegerData son propiedades del registro (no métodos).
-    SetField $rec "StringData" 1 "ResuenAppAudio$n"
-    SetField $rec "IntegerData" 2 -1   # -1: HKCU en instalación por usuario
-    SetField $rec "StringData" 3 $e[0]
-    if ($null -ne $e[1]) { SetField $rec "StringData" 4 $e[1] }
-    SetField $rec "StringData" 5 $e[2]
-    SetField $rec "StringData" 6 $component
-    Call $insert "Execute" @($rec) | Out-Null
+    foreach ($text in $e) { if ($null -ne $text -and $text.Contains("'")) { throw "Comilla simple no soportada: $text" } }
+    if ($null -eq $e[1]) {
+        $sql = "INSERT INTO ``Registry`` (``Registry``, ``Root``, ``Key``, ``Value``, ``Component_``) VALUES ('ResuenAppAudio$n', 1, '$($e[0])', '$($e[2])', '$component')"
+    } else {
+        $sql = "INSERT INTO ``Registry`` (``Registry``, ``Root``, ``Key``, ``Name``, ``Value``, ``Component_``) VALUES ('ResuenAppAudio$n', 1, '$($e[0])', '$($e[1])', '$($e[2])', '$component')"
+    }
+    $view = Call $db "OpenView" @($sql)
+    Call $view "Execute" @() | Out-Null
+    Call $view "Close" @() | Out-Null
 }
-Call $insert "Close" @() | Out-Null
 Call $db "Commit" @() | Out-Null
 Write-Output "$n claves de registro agregadas al componente $component ($($extensions -join ', '))"
