@@ -120,7 +120,9 @@ compose.desktop {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg)
             packageName = "ResuenApp"
             packageVersion = appVersion
-            description = "Reproductor de música sin pérdida"
+            // Windows muestra este texto como nombre de la app en "Abrir con" y en el Administrador
+            // de tareas, y jpackage no lo guarda bien con tildes ("mÃºsica"): va solo el nombre.
+            description = "ResuenApp"
             vendor = "EdoGris"
             includeAllModules = true
 

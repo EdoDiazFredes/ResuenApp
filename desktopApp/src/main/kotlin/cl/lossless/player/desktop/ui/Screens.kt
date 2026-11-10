@@ -74,6 +74,7 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -112,7 +113,10 @@ import androidx.compose.ui.unit.sp
 import cl.lossless.player.desktop.APP_VERSION
 import cl.lossless.player.desktop.Album
 import cl.lossless.player.desktop.Covers
+import cl.lossless.player.desktop.InstalledExe
 import cl.lossless.player.desktop.IsMac
+import cl.lossless.player.desktop.IsWindows
+import cl.lossless.player.desktop.openWindowsDefaultApps
 import cl.lossless.player.desktop.PlaybackAction
 import cl.lossless.player.desktop.Shortcuts
 import cl.lossless.player.desktop.Lang
@@ -933,6 +937,8 @@ fun SettingsScreen(
             Text(t(S.outputNote), color = Neon.Muted, fontSize = 12.sp)
         }
 
+        if (IsWindows) DefaultPlayerCard()
+
         SettingsCard(t(S.about)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(AppIcon, null, Modifier.size(36.dp))
@@ -941,6 +947,18 @@ fun SettingsScreen(
             }
             UpdateSettings(onCheckUpdate, onInstallUpdate)
         }
+    }
+}
+
+/** Windows: dejar ResuenApp como reproductor de audio predeterminado y ver dónde está instalada. */
+@Composable
+private fun DefaultPlayerCard() {
+    SettingsCard(t(S.defaultPlayer)) {
+        Text(t(S.defaultPlayerDesc), color = Neon.Muted, fontSize = 12.sp)
+        InstalledExe?.let { exe ->
+            Text("${t(S.installedAt)}: $exe", color = Neon.Text, fontFamily = Mono, fontSize = 12.sp)
+        }
+        GhostButton(Icons.Rounded.OpenInNew, t(S.defaultPlayerOpen)) { openWindowsDefaultApps() }
     }
 }
 

@@ -52,6 +52,7 @@ fun main(args: Array<String>) {
     }
     // Ya hay una ResuenApp abierta: le pasa los archivos (si los hay) y esta copia se cierra.
     if (!SingleInstance.acquire(args)) exitProcess(0)
+    if (IsWindows) refreshWindowsAppName()
     // Diálogos de Swing (elegir carpeta) con el aspecto nativo del sistema.
     runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
     val player = Player()

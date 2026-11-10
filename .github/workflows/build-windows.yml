@@ -38,7 +38,13 @@ jobs:
         shell: pwsh
         run: |
           $msi = Get-ChildItem desktopApp/build/compose/binaries/main/msi/*.msi | Select-Object -First 1
-          ./desktopApp/installer/brand-msi.ps1 -Msi $msi.FullName
+          # Cada script en su propio proceso: el COM de Windows Installer deja el .msi abierto
+          # hasta que el proceso termina, y el segundo no podría abrirlo.
+          pwsh -NoProfile -File ./desktopApp/installer/brand-msi.ps1 -Msi $msi.FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # ResuenApp en Aplicaciones predeterminadas de Windows (FLAC, MP3, WAV…).
+          pwsh -NoProfile -File ./desktopApp/installer/register-audio.ps1 -Msi $msi.FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       # ResuenApp-Setup.exe: el .msi dentro de un instalador WiX (Burn) que sí muestra el ícono de
       # la app en la barra de título. Usa el WiX que descarga el plugin de Compose.
@@ -140,9 +146,23 @@ jobs:
           $h = Wait-Window 30
           if ($h -ne [IntPtr]::Zero) { Start-Sleep -Milliseconds 1500; Shot $h "2-progreso-1034.png" }
           $p.WaitForExit(180000) | Out-Null
+          # Ya instalado: ResuenApp debe figurar como reproductor en Aplicaciones predeterminadas.
+          $caps = "HKCU:\Software\Clients\Media\ResuenApp\Capabilities"
+          $registered = (Get-ItemProperty "HKCU:\Software\RegisteredApplications" -ErrorAction SilentlyContinue).ResuenApp
+          $flac = (Get-ItemProperty "$caps\FileAssociations" -ErrorAction SilentlyContinue).'.flac'
+          $open = (Get-ItemProperty "HKCU:\Software\Classes\ResuenApp.AudioFile\shell\open\command" -ErrorAction SilentlyContinue).'(default)'
+          Write-Host "RegisteredApplications: $registered"
+          Write-Host ".flac -> $flac"
+          Write-Host "Abrir: $open"
+          if ($registered -ne "Software\Clients\Media\ResuenApp\Capabilities" -or $flac -ne "ResuenApp.AudioFile" -or $open -notmatch 'ResuenApp\.exe" "%1"$') {
+            throw "El instalador no registró ResuenApp como reproductor de audio"
+          }
           Open-Setup "-lang 1034" "3-modificar-1034" | Out-Null
           Close-Setup
           Start-Process $setup -ArgumentList "/uninstall /quiet" -Wait
+          if ((Get-ItemProperty "HKCU:\Software\RegisteredApplications" -ErrorAction SilentlyContinue).ResuenApp) {
+            throw "Al desinstalar quedó ResuenApp en RegisteredApplications"
+          }
           Get-ChildItem $shots
 
       # Las capturas también van al registro en base64 (entre marcas), para poder verlas sin
@@ -170,6 +190,10 @@ jobs:
         shell: pwsh
         run: |
           $exe = (Resolve-Path "desktopApp/build/compose/binaries/main/app/ResuenApp/ResuenApp.exe").Path
+          # Windows usa la descripción del .exe como nombre en "Abrir con".
+          $desc = (Get-Item $exe).VersionInfo.FileDescription
+          Write-Output "FileDescription: $desc"
+          if ($desc -ne "ResuenApp") { throw "El .exe se muestra como '$desc' en Abrir con" }
           $out = Join-Path $env:RUNNER_TEMP "selftest.txt"
           $p = Start-Process -FilePath $exe -ArgumentList "--self-test", "`"$out`"" -Wait -PassThru
           if (Test-Path $out) { Get-Content $out } else { Write-Output "Sin reporte" }
