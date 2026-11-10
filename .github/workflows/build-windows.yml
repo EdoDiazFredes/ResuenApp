@@ -38,9 +38,13 @@ jobs:
         shell: pwsh
         run: |
           $msi = Get-ChildItem desktopApp/build/compose/binaries/main/msi/*.msi | Select-Object -First 1
-          ./desktopApp/installer/brand-msi.ps1 -Msi $msi.FullName
+          # Cada script en su propio proceso: el COM de Windows Installer deja el .msi abierto
+          # hasta que el proceso termina, y el segundo no podría abrirlo.
+          pwsh -NoProfile -File ./desktopApp/installer/brand-msi.ps1 -Msi $msi.FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           # ResuenApp en Aplicaciones predeterminadas de Windows (FLAC, MP3, WAV…).
-          ./desktopApp/installer/register-audio.ps1 -Msi $msi.FullName
+          pwsh -NoProfile -File ./desktopApp/installer/register-audio.ps1 -Msi $msi.FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       # ResuenApp-Setup.exe: el .msi dentro de un instalador WiX (Burn) que sí muestra el ícono de
       # la app en la barra de título. Usa el WiX que descarga el plugin de Compose.
