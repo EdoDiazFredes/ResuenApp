@@ -98,6 +98,21 @@ object S {
     val outputFormat = Str("Archivo %1\$s · salida %2\$s", "File %1\$s · output %2\$s", "Fichier %1\$s · sortie %2\$s", "Arquivo %1\$s · saída %2\$s")
     val volume = Str("Volumen", "Volume", "Volume", "Volume")
     val about = Str("Acerca de", "About", "À propos", "Sobre")
+
+    val defaultPlayer = Str("Reproductor predeterminado", "Default player", "Lecteur par défaut", "Player padrão")
+    val defaultPlayerDesc = Str(
+        "Elige ResuenApp para FLAC, MP3, WAV y los demás formatos: al abrir un audio desde el Explorador sonará aquí, también con la app ya abierta.",
+        "Choose ResuenApp for FLAC, MP3, WAV and the other formats: audio opened from File Explorer will play here, even when the app is already open.",
+        "Choisissez ResuenApp pour FLAC, MP3, WAV et les autres formats : un audio ouvert depuis l’Explorateur sera lu ici, même si l’app est déjà ouverte.",
+        "Escolha o ResuenApp para FLAC, MP3, WAV e os outros formatos: o áudio aberto no Explorador tocará aqui, mesmo com o app já aberto.",
+    )
+    val defaultPlayerOpen = Str(
+        "Abrir aplicaciones predeterminadas",
+        "Open default apps",
+        "Ouvrir les applications par défaut",
+        "Abrir aplicativos padrão",
+    )
+    val installedAt = Str("Instalada en", "Installed at", "Installée dans", "Instalado em")
     val version = Str("Versión %1\$s", "Version %1\$s", "Version %1\$s", "Versão %1\$s")
 
     val play = Str("Reproducir", "Play", "Lecture", "Tocar")

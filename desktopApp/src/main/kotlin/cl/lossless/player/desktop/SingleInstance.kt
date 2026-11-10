@@ -53,9 +53,10 @@ object SingleInstance {
      * salir. Devuelve true si esta es la primera copia (o si no se pudo hablar con la otra).
      */
     fun acquire(args: Array<String>): Boolean {
-        val raf = runCatching { RandomAccessFile(lockFile, "rw") }.getOrNull() ?: return true
+        val raf = runCatching { RandomAccessFile(lockFile, "rw") }
+            .onFailure { log("no se pudo abrir $lockFile: $it") }.getOrNull() ?: return true
         val ch = raf.channel
-        val got = runCatching { ch.tryLock() }.getOrNull()
+        val got = runCatching { ch.tryLock() }.onFailure { log("tryLock falló: $it") }.getOrNull()
         if (got == null) {
             ch.close()
             // La primera copia puede estar recién arrancando y aún no escribe su puerto.
@@ -63,6 +64,7 @@ object SingleInstance {
                 if (sendToRunning(args)) return false
                 Thread.sleep(200)
             }
+            log("hay otra copia abierta pero no respondió ($lastSendError); se abre otra ventana")
             return true
         }
         channel = ch
@@ -107,6 +109,18 @@ object SingleInstance {
                     }
                 }
             }, "resuenapp-instance").apply { isDaemon = true }.start()
+        }.onFailure { log("no se pudo abrir el puerto local: $it") }
+    }
+
+    /**
+     * Deja constancia en instance.log (carpeta de datos) cuando no se pudo evitar una segunda
+     * ventana, para poder ver por qué en la máquina del usuario.
+     */
+    private fun log(message: String) {
+        runCatching {
+            val f = File(AppDirs.data, "instance.log")
+            if (f.length() > 64_000) f.delete()
+            f.appendText("${java.time.LocalDateTime.now()} [${ProcessHandle.current().pid()}] $message\n")
         }
     }
 
@@ -122,7 +136,9 @@ object SingleInstance {
             out.flush()
         }
         true
-    }.getOrDefault(false)
+    }.getOrElse { lastSendError = it; false }
+
+    private var lastSendError: Throwable? = null
 
     private fun receive(args: List<String>) {
         enqueue(args.filter { it.isNotBlank() && !it.startsWith("--") }.map(::File))
