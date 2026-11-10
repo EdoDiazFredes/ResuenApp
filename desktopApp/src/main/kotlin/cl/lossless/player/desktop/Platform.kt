@@ -22,3 +22,21 @@ val InstalledExe: String? by lazy {
 fun openWindowsDefaultApps() {
     runCatching { ProcessBuilder("explorer.exe", "ms-settings:defaultapps?registeredAppUser=ResuenApp").start() }
 }
+
+/**
+ * Windows guarda en caché (MuiCache) el nombre que muestra en "Abrir con". Las versiones
+ * anteriores lo tenían mal codificado ("Reproductor de mÃºsica…"): se borra para que lo vuelva a
+ * leer del ejecutable, que ahora dice "ResuenApp". En segundo plano para no demorar el arranque.
+ */
+fun refreshWindowsAppName() {
+    val exe = InstalledExe ?: return
+    Thread({
+        runCatching {
+            ProcessBuilder(
+                "reg", "delete",
+                "HKCU\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\MuiCache",
+                "/v", "$exe.FriendlyAppName", "/f",
+            ).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor()
+        }
+    }, "resuenapp-muicache").apply { isDaemon = true }.start()
+}

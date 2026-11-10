@@ -190,6 +190,10 @@ jobs:
         shell: pwsh
         run: |
           $exe = (Resolve-Path "desktopApp/build/compose/binaries/main/app/ResuenApp/ResuenApp.exe").Path
+          # Windows usa la descripción del .exe como nombre en "Abrir con".
+          $desc = (Get-Item $exe).VersionInfo.FileDescription
+          Write-Output "FileDescription: $desc"
+          if ($desc -ne "ResuenApp") { throw "El .exe se muestra como '$desc' en Abrir con" }
           $out = Join-Path $env:RUNNER_TEMP "selftest.txt"
           $p = Start-Process -FilePath $exe -ArgumentList "--self-test", "`"$out`"" -Wait -PassThru
           if (Test-Path $out) { Get-Content $out } else { Write-Output "Sin reporte" }

@@ -81,7 +81,8 @@ $entries = @(
     @("Software\Classes\Applications\ResuenApp.exe\shell\open\command", $null, "`"$exePath`" `"%1`""),
     # Lo que lee Aplicaciones predeterminadas.
     @($caps, "ApplicationName", "ResuenApp"),
-    @($caps, "ApplicationDescription", "Reproductor de música sin pérdida"),
+    # Sin tildes: el .msi no guarda texto en UTF-8.
+    @($caps, "ApplicationDescription", "Reproductor de audio Hi-Res (FLAC, ALAC, WAV, MP3)"),
     @($caps, "ApplicationIcon", "`"$exePath`",0"),
     @("Software\RegisteredApplications", "ResuenApp", $caps)
 )
