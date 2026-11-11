@@ -52,6 +52,17 @@ import cl.lossless.player.desktop.t
 import cl.lossless.player.lyrics.Lyrics
 import kotlinx.coroutines.delay
 
+/** Ajuste observable: abrir el mini reproductor al minimizar la ventana completa. */
+object MiniPlayerPrefs {
+    var openOnMinimize by mutableStateOf(cl.lossless.player.desktop.AppSettings.miniOnMinimize)
+        private set
+
+    fun setOpenOnMinimize(enabled: Boolean) {
+        openOnMinimize = enabled
+        cl.lossless.player.desktop.AppSettings.miniOnMinimize = enabled
+    }
+}
+
 /** Tamaño de la ventana del mini reproductor; crece con el tamaño del texto elegido en Ajustes. */
 fun miniPlayerSize(): DpSize {
     val scale = Appearance.textSize.scale
@@ -92,9 +103,11 @@ fun WindowScope.MiniPlayer(player: Player, pinned: Boolean, onPin: () -> Unit, o
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f).padding(top = 2.dp)) {
+                    // Alto de línea fijo: el estilo por defecto (24 sp) hacía que las etiquetas de
+                    // formato quedaran cortadas por abajo y se vieran como píldoras vacías.
                     Text(
                         track?.title ?: t(S.nothingPlaying), color = Neon.TextStrong, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        lineHeight = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     val error = state.error
                     Text(
@@ -104,13 +117,22 @@ fun WindowScope.MiniPlayer(player: Player, pinned: Boolean, onPin: () -> Unit, o
                             else -> ""
                         },
                         color = if (error != null) Color(0xFFFF6B81) else Neon.Muted, fontSize = 11.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     if (track != null) {
-                        Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            NeonBadge(track.codecLabel, color = Neon.Accent, emphasized = true)
-                            if (track.bitsPerSample > 0 && track.sampleRate > 0) {
-                                NeonBadge("${track.bitsPerSample}/${cl.lossless.player.desktop.khz(track.sampleRate)}", color = Neon.Text)
+                        val codec = track.codecLabel.trim()
+                        val resolution = if (track.bitsPerSample > 0 && track.sampleRate > 0) {
+                            "${track.bitsPerSample}/${cl.lossless.player.desktop.khz(track.sampleRate)}"
+                        } else if (track.sampleRate > 0) {
+                            "${cl.lossless.player.desktop.khz(track.sampleRate)} kHz"
+                        } else {
+                            ""
+                        }
+                        // Sin datos de formato no se dibuja nada (antes quedaban píldoras vacías).
+                        if (codec.isNotEmpty() || resolution.isNotEmpty()) {
+                            Row(Modifier.padding(top = 5.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (codec.isNotEmpty()) NeonBadge(codec, color = Neon.Accent, emphasized = true, lineHeight = 13.sp)
+                                if (resolution.isNotEmpty()) NeonBadge(resolution, color = Neon.Text, lineHeight = 13.sp)
                             }
                         }
                     }

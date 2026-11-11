@@ -319,6 +319,18 @@ object S {
     // Mini reproductor
     val miniPlayer = Str("Mini reproductor", "Mini player", "Mini lecteur", "Mini player")
     val fullView = Str("Vista completa", "Full view", "Vue complète", "Visualização completa")
+    val miniOnMinimize = Str(
+        "Abrir el mini reproductor al minimizar la ventana",
+        "Open the mini player when the window is minimized",
+        "Ouvrir le mini lecteur quand la fenêtre est réduite",
+        "Abrir o mini player ao minimizar a janela",
+    )
+    val miniOnMinimizeDesc = Str(
+        "Solo si hay una canción cargada. Para volver, usa el botón de vista completa o pulsa Esc.",
+        "Only when a song is loaded. To go back, use the full view button or press Esc.",
+        "Seulement si un morceau est chargé. Pour revenir, utilisez le bouton vue complète ou appuyez sur Échap.",
+        "Somente se houver uma música carregada. Para voltar, use o botão de visualização completa ou pressione Esc.",
+    )
     val alwaysOnTop = Str(
         "Siempre encima de las demás ventanas",
         "Always on top of other windows",
