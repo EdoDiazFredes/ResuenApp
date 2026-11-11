@@ -57,7 +57,7 @@ object MiniPlayerPrefs {
     var openOnMinimize by mutableStateOf(cl.lossless.player.desktop.AppSettings.miniOnMinimize)
         private set
 
-    fun setOpenOnMinimize(enabled: Boolean) {
+    fun updateOpenOnMinimize(enabled: Boolean) {
         openOnMinimize = enabled
         cl.lossless.player.desktop.AppSettings.miniOnMinimize = enabled
     }

@@ -936,7 +936,7 @@ fun SettingsScreen(
                 Text(t(S.miniOnMinimize), color = Neon.Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 Switch(
                     checked = MiniPlayerPrefs.openOnMinimize,
-                    onCheckedChange = MiniPlayerPrefs::setOpenOnMinimize,
+                    onCheckedChange = MiniPlayerPrefs::updateOpenOnMinimize,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
                         uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
