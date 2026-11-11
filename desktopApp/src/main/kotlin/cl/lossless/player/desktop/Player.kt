@@ -86,8 +86,12 @@ class Player {
         rebuildOrder()
     }
 
+    /** La cola se terminó de reproducir; si llegan más pistas con [append], sigue con ellas. */
+    @Volatile private var endedAtTail = false
+
     fun playQueue(tracks: List<Track>, start: Int) {
         if (tracks.isEmpty()) return
+        endedAtTail = false
         _state.update { it.copy(queue = tracks, index = start.coerceIn(tracks.indices), error = null) }
         rebuildOrder()
         startCurrent()
@@ -209,6 +213,23 @@ class Player {
         }
     }
 
+    /**
+     * Agrega [tracks] al final de la cola (las pistas de Drive llegan a medida que se descargan).
+     * Si la cola ya se había terminado esperando la siguiente, sigue con la primera agregada.
+     */
+    fun append(tracks: List<Track>) {
+        if (tracks.isEmpty()) return
+        val firstNew = _state.value.queue.size
+        _state.update { it.copy(queue = it.queue + tracks) }
+        // En aleatorio, las que llegan se suman al final del recorrido ya barajado.
+        if (_shuffle.value && order.size == firstNew) order = order + (firstNew until firstNew + tracks.size)
+        if (endedAtTail && session == null) {
+            endedAtTail = false
+            _state.update { it.copy(index = firstNew, error = null) }
+            startCurrent()
+        }
+    }
+
     /** Cambia en la cola las pistas cuyas etiquetas se editaron, sin cortar la reproducción. */
     fun replaceTracks(updated: Map<String, Track>) {
         _state.update { st -> st.copy(queue = st.queue.map { updated[it.path] ?: it }) }
@@ -220,6 +241,7 @@ class Player {
     }
 
     private fun startCurrent() {
+        endedAtTail = false
         session?.stop()
         val track = _state.value.current ?: return
         val s = Session(track)
@@ -239,6 +261,7 @@ class Player {
             startCurrent()
         } else {
             session = null
+            endedAtTail = true
             _state.update { it.copy(playing = false, outputFormat = null) }
         }
     }

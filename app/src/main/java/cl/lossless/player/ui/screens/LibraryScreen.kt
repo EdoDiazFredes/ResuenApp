@@ -110,6 +110,7 @@ fun LibraryScreen(
     val selection = remember { TrackSelection() }
     LaunchedEffect(state.tracks) { selection.clear() }
     val editSelected = { onEditTags(state.tracks.filter { it in selection }) }
+    val addSelectedToPlaylist = { actions.addAllToPlaylist(state.tracks.filter { it in selection }) { selection.clear() } }
     var query by rememberSaveable { mutableStateOf("") }
     BackHandler(enabled = query.isNotEmpty()) { query = "" }
     var openAlbumKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -142,6 +143,7 @@ fun LibraryScreen(
             onSyncLyrics = { onSyncLyrics(album.tracks) },
             selection = selection,
             onEditSelected = editSelected,
+            onAddSelectedToPlaylist = addSelectedToPlaylist,
         )
         BackHandler(enabled = selection.active) { selection.clear() }
         return
@@ -159,6 +161,7 @@ fun LibraryScreen(
             onSyncLyrics = { onSyncLyrics(folder.tracks) },
             selection = selection,
             onEditSelected = editSelected,
+            onAddSelectedToPlaylist = addSelectedToPlaylist,
         )
         BackHandler(enabled = selection.active) { selection.clear() }
         return
@@ -193,7 +196,7 @@ fun LibraryScreen(
             else -> when (LibraryTab.entries[tab]) {
                 LibraryTab.TRACKS -> Column(Modifier.fillMaxSize()) {
                     BackHandler(enabled = selection.active) { selection.clear() }
-                    if (selection.active) SelectionBar(selection, state.tracks, onEdit = editSelected)
+                    if (selection.active) SelectionBar(selection, state.tracks, onEdit = editSelected, onAddToPlaylist = addSelectedToPlaylist)
                     TrackList(
                         state.tracks, actions, Modifier.fillMaxSize(),
                         selection = selection,
@@ -386,10 +389,11 @@ private fun CollectionDetail(
     onSyncLyrics: (() -> Unit)? = null,
     selection: TrackSelection? = null,
     onEditSelected: () -> Unit = {},
+    onAddSelectedToPlaylist: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(title = "", onBack = onBack)
-        if (selection != null && selection.active) SelectionBar(selection, tracks, onEdit = onEditSelected)
+        if (selection != null && selection.active) SelectionBar(selection, tracks, onEdit = onEditSelected, onAddToPlaylist = onAddSelectedToPlaylist)
         TrackList(
             tracks = tracks,
             actions = actions,

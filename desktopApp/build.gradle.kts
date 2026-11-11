@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -29,7 +30,25 @@ val generateVersion by tasks.registering {
     outputs.dir(out)
     doLast { out.get().file("resuenapp-version.txt").asFile.writeText(version) }
 }
-sourceSets { main { resources.srcDir(generateVersion) } }
+// Cliente OAuth de Google (tipo "App de escritorio") para Google Drive. Lo entregan los secretos del
+// CI (GOOGLE_DESKTOP_CLIENT_ID y GOOGLE_DESKTOP_CLIENT_SECRET); sin ellos la app compila igual y la
+// pantalla de Drive avisa que no está configurado. Google no considera secreto el "client secret"
+// de una app instalada, pero se deja fuera del repositorio igual.
+val generateDriveConfig by tasks.registering {
+    val out = layout.buildDirectory.dir("generated/drive")
+    val clientId = providers.environmentVariable("GOOGLE_DESKTOP_CLIENT_ID").orElse("")
+    val clientSecret = providers.environmentVariable("GOOGLE_DESKTOP_CLIENT_SECRET").orElse("")
+    inputs.property("clientId", clientId)
+    inputs.property("clientSecret", clientSecret)
+    outputs.dir(out)
+    doLast {
+        val props = Properties()
+        props["clientId"] = clientId.get().trim()
+        props["clientSecret"] = clientSecret.get().trim()
+        out.get().file("resuenapp-drive.properties").asFile.outputStream().use { props.store(it, null) }
+    }
+}
+sourceSets { main { resources.srcDir(generateVersion); resources.srcDir(generateDriveConfig) } }
 
 // Cada instalador lleva solo las librerías nativas de FFmpeg de la máquina que lo compila
 // (jpackage no puede empaquetar para otro sistema): windows-x86_64, macosx-arm64 o macosx-x86_64.
@@ -74,6 +93,23 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
+// Formatos que la app ofrece abrir ("Abrir con" en Windows, Finder en macOS). Un archivo abierto
+// así con la app ya en marcha se pasa a la ventana abierta (ver SingleInstance.kt).
+val audioFileTypes = listOf(
+    "flac" to "audio/flac",
+    "m4a" to "audio/mp4",
+    "alac" to "audio/mp4",
+    "wav" to "audio/wav",
+    "aif" to "audio/aiff",
+    "aiff" to "audio/aiff",
+    "mp3" to "audio/mpeg",
+    "aac" to "audio/aac",
+    "ogg" to "audio/ogg",
+    "oga" to "audio/ogg",
+    "opus" to "audio/opus",
+    "dsf" to "audio/x-dsf",
+)
+
 compose.desktop {
     application {
         mainClass = "cl.lossless.player.desktop.MainKt"
@@ -84,7 +120,9 @@ compose.desktop {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg)
             packageName = "ResuenApp"
             packageVersion = appVersion
-            description = "Reproductor de música sin pérdida"
+            // Windows muestra este texto como nombre de la app en "Abrir con" y en el Administrador
+            // de tareas, y jpackage no lo guarda bien con tildes ("mÃºsica"): va solo el nombre.
+            description = "ResuenApp"
             vendor = "EdoGris"
             includeAllModules = true
 
@@ -98,6 +136,7 @@ compose.desktop {
                 iconFile.set(project.file("icons/resuenapp.ico"))
                 // Fijo: permite que una versión nueva del .msi reemplace a la anterior.
                 upgradeUuid = "6f1c2a8e-3b4d-4c5e-9f60-7a8b9c0d1e2f"
+                audioFileTypes.forEach { (ext, mime) -> fileAssociation(mime, ext, "Audio ${ext.uppercase()}") }
             }
 
             // .dmg sin firma de Apple: al abrirla por primera vez hay que autorizarla en
@@ -109,6 +148,7 @@ compose.desktop {
                 minimumSystemVersion = "11.0"
                 // Generado desde icons/resuenapp.svg con el margen de la plantilla de íconos de macOS.
                 iconFile.set(project.file("icons/resuenapp.icns"))
+                audioFileTypes.forEach { (ext, mime) -> fileAssociation(mime, ext, "Audio ${ext.uppercase()}") }
             }
         }
     }

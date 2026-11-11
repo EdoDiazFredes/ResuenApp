@@ -25,9 +25,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Lock
@@ -80,6 +82,7 @@ import cl.lossless.player.ui.lyrics.AlignServerDialog
 import cl.lossless.player.ui.lyrics.LyricsViewModel
 import cl.lossless.player.ui.player.PlayerActions
 import cl.lossless.player.ui.player.rememberPlayerUiState
+import cl.lossless.player.ui.screens.DriveScreen
 import cl.lossless.player.ui.screens.FoldersScreen
 import cl.lossless.player.ui.screens.LibraryScreen
 import cl.lossless.player.ui.screens.NowPlayingScreen
@@ -90,6 +93,7 @@ private enum class Destination(@StringRes val labelRes: Int, val icon: ImageVect
     LIBRARY(R.string.library_library, Icons.Outlined.LibraryMusic, Icons.Rounded.LibraryMusic),
     FOLDERS(R.string.library_folders, Icons.Outlined.Folder, Icons.Rounded.Folder),
     PLAYLISTS(R.string.library_playlists, Icons.AutoMirrored.Outlined.QueueMusic, Icons.AutoMirrored.Rounded.QueueMusic),
+    DRIVE(R.string.drive_tab, Icons.Outlined.Cloud, Icons.Rounded.Cloud),
     SETTINGS(R.string.library_settings, Icons.Outlined.Settings, Icons.Rounded.Settings),
 }
 
@@ -102,6 +106,7 @@ fun LosslessApp(
     playlistsVm: PlaylistsViewModel = viewModel(),
     equalizerVm: EqualizerViewModel = viewModel(),
     lyricsVm: LyricsViewModel = viewModel(),
+    driveVm: DriveViewModel = viewModel(),
     /** Cambia cada vez que se pide abrir "Reproduciendo" desde fuera (notificación). */
     openNowPlayingSignal: Int = 0,
 ) {
@@ -112,6 +117,8 @@ fun LosslessApp(
     val playerActions = remember(player) { PlayerActions(player) }
     val audioSource by PlaybackStatus.source.collectAsStateWithLifecycle()
     val audioOutput by PlaybackStatus.output.collectAsStateWithLifecycle()
+    val driveState by driveVm.ui.collectAsStateWithLifecycle()
+    val driveTracks by driveVm.tracks.collectAsStateWithLifecycle()
 
     // ---------- Permisos ----------
     fun granted() = context.checkSelfPermission(AUDIO_PERMISSION) == PackageManager.PERMISSION_GRANTED
@@ -144,6 +151,17 @@ fun LosslessApp(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let(vm::selectFolder) }
     val pickFolder = { folderPicker.launch(null) }
+
+    // ---------- Google Drive: pantalla de permiso de Google ----------
+    val driveAuthLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result -> driveVm.onAuthResult(result.data) }
+    driveState.authIntent?.let { intent ->
+        LaunchedEffect(intent) {
+            driveVm.consumeAuthIntent()
+            driveAuthLauncher.launch(IntentSenderRequest.Builder(intent.intentSender).build())
+        }
+    }
 
     // ---------- Etiquetas: autorización del sistema para modificar canciones fuera de la carpeta ----------
     val tagConsent = rememberLauncherForActivityResult(
@@ -187,8 +205,8 @@ fun LosslessApp(
     }
 
     // ---------- Acciones de pista ----------
-    var addToPlaylistFor by remember { mutableStateOf<Track?>(null) }
-    var createPlaylistWith by remember { mutableStateOf<Track?>(null) }
+    var addToPlaylistFor by remember { mutableStateOf<PlaylistRequest?>(null) }
+    var createPlaylistWith by remember { mutableStateOf<PlaylistRequest?>(null) }
     val favorites = remember(playlists) { playlists.firstOrNull { it.isFavorites }?.trackUris?.toSet().orEmpty() }
     fun artworkFor(track: Track) = state.coverFor(track)?.let { Uri.fromFile(it.file) }
     val trackActions = TrackActions(
@@ -200,12 +218,20 @@ fun LosslessApp(
         playNext = { playerActions.playNext(it, artworkFor(it)) },
         enqueue = { playerActions.enqueue(it, artworkFor(it)) },
         toggleFavorite = { playlistsVm.toggleFavorite(it.uri.toString()) },
-        addToPlaylist = { addToPlaylistFor = it },
+        addToPlaylist = { addToPlaylistFor = PlaylistRequest(listOf(it)) },
+        addAllToPlaylist = { tracks, onAdded -> if (tracks.isNotEmpty()) addToPlaylistFor = PlaylistRequest(tracks, onAdded) },
     )
 
     var destination by rememberSaveable { mutableStateOf(Destination.LIBRARY) }
     var nowPlayingOpen by rememberSaveable { mutableStateOf(false) }
-    val currentTrack = playerState.current?.let { state.tracksById[it.mediaId] }
+    val currentTrack = playerState.current?.let { state.tracksById[it.mediaId] ?: driveTracks[it.mediaId] }
+    val drivePlayback = remember(playerActions) {
+        object : DrivePlayback {
+            override fun start(track: Track) = playerActions.playTracks(listOf(track), 0) { null }
+            override fun append(track: Track, firstUri: String) =
+                playerActions.appendIfQueueStartsWith(track, null, firstUri)
+        }
+    }
     val lyricsState by lyricsVm.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(openNowPlayingSignal) {
@@ -253,7 +279,7 @@ fun LosslessApp(
             },
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
-                if (!hasPermission && state.location == null && destination != Destination.SETTINGS) {
+                if (!hasPermission && state.location == null && destination != Destination.SETTINGS && destination != Destination.DRIVE) {
                     EmptyState(
                         icon = Icons.Rounded.Lock,
                         title = stringResource(R.string.library_permission_title),
@@ -301,6 +327,20 @@ fun LosslessApp(
                         onRename = { p, name -> playlistsVm.rename(p.id, name) },
                         onDelete = { playlistsVm.delete(it.id) },
                         onRemoveTrack = { p, t -> playlistsVm.remove(p.id, t.uri.toString()) },
+                    )
+                    Destination.DRIVE -> DriveScreen(
+                        state = driveState,
+                        currentMediaId = playerState.current?.mediaId,
+                        uriFor = driveVm::uriFor,
+                        onShown = driveVm::onShown,
+                        onConnect = driveVm::connect,
+                        onSignOut = driveVm::signOut,
+                        onRoot = driveVm::openRoot,
+                        onOpen = driveVm::open,
+                        onBack = driveVm::back,
+                        onReload = driveVm::reload,
+                        onPlay = { driveVm.play(it, drivePlayback) },
+                        onClearCache = driveVm::clearCache,
                     )
                     Destination.SETTINGS -> SettingsScreen(
                         state = state,
@@ -431,26 +471,36 @@ fun LosslessApp(
     state.tagEdit?.let { edit ->
         TagEditDialog(edit, onDismiss = vm::closeTagEditor, onSave = vm::saveTags)
     }
-    addToPlaylistFor?.let { track ->
+    addToPlaylistFor?.let { request ->
         AddToPlaylistDialog(
             playlists = playlists,
             onSelect = { p ->
-                playlistsVm.add(p.id, track.uri.toString())
+                playlistsVm.addAll(p.id, request.uris)
                 addToPlaylistFor = null
-                Toast.makeText(context, context.getString(R.string.library_added_to_playlist, p.displayName(context)), Toast.LENGTH_SHORT).show()
+                request.onAdded()
+                val name = p.displayName(context)
+                val message = if (request.tracks.size == 1) context.getString(R.string.library_added_to_playlist, name)
+                else context.resources.getQuantityString(R.plurals.library_added_many_to_playlist, request.tracks.size, request.tracks.size, name)
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             },
-            onCreateNew = { createPlaylistWith = track; addToPlaylistFor = null },
+            onCreateNew = { createPlaylistWith = request; addToPlaylistFor = null },
             onDismiss = { addToPlaylistFor = null },
         )
     }
-    createPlaylistWith?.let { track ->
+    createPlaylistWith?.let { request ->
         PlaylistNameDialog(
             title = stringResource(R.string.library_new_playlist),
             onConfirm = { name ->
-                playlistsVm.create(name, listOf(track.uri.toString()))
+                playlistsVm.create(name, request.uris)
                 createPlaylistWith = null
+                request.onAdded()
             },
             onDismiss = { createPlaylistWith = null },
         )
     }
+}
+
+/** Canciones que esperan elegir playlist; [onAdded] corre al añadirlas (p. ej. para quitar la selección). */
+private class PlaylistRequest(val tracks: List<Track>, val onAdded: () -> Unit = {}) {
+    val uris: List<String> get() = tracks.map { it.uri.toString() }.distinct()
 }

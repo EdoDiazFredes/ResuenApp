@@ -145,6 +145,11 @@ object AppSettings {
         get() = prefs.getBoolean("shuffle", false)
         set(value) = prefs.putBoolean("shuffle", value)
 
+    /** Estimar los tiempos de las letras que vienen solo como texto al abrirlas (como en Android). */
+    var lyricsAutoSync: Boolean
+        get() = prefs.getBoolean("lyricsAutoSync", true)
+        set(value) = prefs.putBoolean("lyricsAutoSync", value)
+
     // Apariencia: nombres de ThemeMode, Accent, AppFont y TextSize (ver ui/Theme.kt).
     var theme: String?
         get() = prefs.get("theme", null)
@@ -186,10 +191,25 @@ object AppSettings {
         get() = prefs.getBoolean("media_keys", !IsMac)
         set(value) = prefs.putBoolean("media_keys", value)
 
+    // Google Drive: sesión guardada (el refresh token permite pedir accesos nuevos sin el navegador).
+    var driveRefreshToken: String?
+        get() = prefs.get("drive_refresh", null)
+        set(value) = if (value == null) prefs.remove("drive_refresh") else prefs.put("drive_refresh", value)
+    var driveAccount: Pair<String, String>?
+        get() = prefs.get("drive_email", null)?.let { prefs.get("drive_name", "") to it }
+        set(value) {
+            if (value == null) { prefs.remove("drive_name"); prefs.remove("drive_email") }
+            else { prefs.put("drive_name", value.first); prefs.put("drive_email", value.second) }
+        }
+
     // Mini reproductor: si queda encima de las demás ventanas y dónde se dejó (null = esquina inferior derecha).
     var miniOnTop: Boolean
         get() = prefs.getBoolean("mini_on_top", true)
         set(value) = prefs.putBoolean("mini_on_top", value)
+    // Al minimizar la ventana completa se abre el mini reproductor (si hay una canción cargada).
+    var miniOnMinimize: Boolean
+        get() = prefs.getBoolean("mini_on_minimize", true)
+        set(value) = prefs.putBoolean("mini_on_minimize", value)
     var miniPosition: Pair<Float, Float>?
         get() {
             val x = prefs.getFloat("mini_x", Float.NaN)

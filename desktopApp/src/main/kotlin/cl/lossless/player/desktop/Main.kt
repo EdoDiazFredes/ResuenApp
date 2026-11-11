@@ -2,10 +2,12 @@ package cl.lossless.player.desktop
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -25,6 +27,7 @@ import cl.lossless.player.desktop.ui.App
 import cl.lossless.player.desktop.ui.AppIcon
 import cl.lossless.player.desktop.ui.Appearance
 import cl.lossless.player.desktop.ui.MiniPlayer
+import cl.lossless.player.desktop.ui.MiniPlayerPrefs
 import cl.lossless.player.desktop.ui.NeonTheme
 import cl.lossless.player.desktop.ui.miniPlayerSize
 import cl.lossless.player.lyrics.LrcParser
@@ -49,19 +52,45 @@ fun main(args: Array<String>) {
     if (args.firstOrNull() == "--self-test") {
         exitProcess(selfTest(args.getOrNull(1)?.let(::File)))
     }
+    // Ya hay una ResuenApp abierta: le pasa los archivos (si los hay) y esta copia se cierra.
+    if (!SingleInstance.acquire(args)) exitProcess(0)
+    if (IsWindows) refreshWindowsAppName()
     // Diálogos de Swing (elegir carpeta) con el aspecto nativo del sistema.
     runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
     val player = Player()
     Shortcuts.start(player)
+    // Archivos abiertos con la app ("Abrir con", doble clic, Finder): suenan de inmediato.
+    SingleInstance.onFiles { files ->
+        val tracks = files.mapNotNull { runCatching { LibraryScanner.readTrack(it.toPath()) }.getOrNull() }
+        player.playQueue(tracks, 0)
+    }
     application {
         val searchFocus = remember { FocusRequester() }
         var mini by remember { mutableStateOf(false) }
         var miniOnTop by remember { mutableStateOf(AppSettings.miniOnTop) }
+        // Se abrió la app otra vez: se muestra la ventana que esté en uso (completa o mini).
+        val raise by SingleInstance.raise.collectAsState()
         val miniState = rememberWindowState(size = miniPlayerSize(), position = miniStartPosition())
+        val mainState = rememberWindowState(width = 1360.dp, height = 860.dp)
 
         fun showFull() {
             AppSettings.miniPosition = (miniState.position as? WindowPosition.Absolute)?.let { it.x.value to it.y.value }
+            // Si se llegó al mini reproductor minimizando, la ventana completa vuelve restaurada.
+            mainState.isMinimized = false
             mini = false
+        }
+
+        fun showMini() {
+            miniState.size = miniPlayerSize()
+            mini = true
+        }
+
+        // Minimizar la ventana completa abre el mini reproductor (si está activado en Ajustes y
+        // hay una canción cargada; sin nada que mostrar se minimiza como siempre).
+        LaunchedEffect(Unit) {
+            snapshotFlow { mainState.isMinimized }.collect { minimized ->
+                if (minimized && !mini && MiniPlayerPrefs.openOnMinimize && player.state.value.current != null) showMini()
+            }
         }
 
         // La ventana completa solo se oculta mientras el mini reproductor está abierto, así la
@@ -70,12 +99,13 @@ fun main(args: Array<String>) {
             onCloseRequest = {
                 player.shutdown()
                 Shortcuts.shutdown()
+                SingleInstance.release()
                 exitApplication()
             },
             visible = !mini,
             title = "ResuenApp",
             icon = BitmapPainter(AppIcon),
-            state = rememberWindowState(width = 1360.dp, height = 860.dp),
+            state = mainState,
             // Ctrl+F (⌘F en macOS) lleva a la búsqueda, como en la maqueta.
             onPreviewKeyEvent = { e ->
                 if (Shortcuts.handleCapture(e)) {
@@ -90,6 +120,7 @@ fun main(args: Array<String>) {
             // Atajos de reproducción: solo si nada enfocado (la búsqueda, un campo) usó la tecla.
             onKeyEvent = { e -> Shortcuts.handle(e, player) },
         ) {
+            LaunchedEffect(raise) { if (raise > 0 && !mini) SingleInstance.bringToFront(window) }
             // Barra de título de Windows con los colores de la app (fondo del tema, borde de acento).
             val palette = Appearance.palette
             LaunchedEffect(palette, mini) {
@@ -102,10 +133,7 @@ fun main(args: Array<String>) {
                     delay(5_000)
                 }
             }
-            App(player, searchFocus, onMiniPlayer = {
-                miniState.size = miniPlayerSize()
-                mini = true
-            })
+            App(player, searchFocus, onMiniPlayer = ::showMini)
         }
 
         if (mini) {
@@ -124,6 +152,7 @@ fun main(args: Array<String>) {
                 },
                 onKeyEvent = { e -> Shortcuts.handle(e, player) },
             ) {
+                LaunchedEffect(raise) { if (raise > 0) SingleInstance.bringToFront(window) }
                 CompositionLocalProvider(LocalLang provides (AppSettings.language ?: Lang.system())) {
                     NeonTheme {
                         MiniPlayer(

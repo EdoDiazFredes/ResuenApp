@@ -105,13 +105,17 @@
     <string name="library_sort_most_tracks">Most songs</string>
 
     <!-- Selección de varias canciones y edición de etiquetas -->
-    <string name="library_select_hint">Long-press a song to select several and set their album and artist</string>
+    <string name="library_select_hint">Long-press a song to select several, then set their album and artist or add them to a playlist</string>
     <plurals name="library_selected_count">
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
     </plurals>
     <string name="library_select_all">Select all</string>
     <string name="library_clear_selection">Clear selection</string>
+    <plurals name="library_added_many_to_playlist">
+        <item quantity="one">%1$d song added to %2$s</item>
+        <item quantity="other">%1$d songs added to %2$s</item>
+    </plurals>
     <string name="library_edit_tags">Edit</string>
     <plurals name="library_tags_title">
         <item quantity="one">Edit %d song</item>

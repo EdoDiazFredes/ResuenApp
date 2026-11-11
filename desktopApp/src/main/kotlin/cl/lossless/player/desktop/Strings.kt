@@ -98,6 +98,21 @@ object S {
     val outputFormat = Str("Archivo %1\$s · salida %2\$s", "File %1\$s · output %2\$s", "Fichier %1\$s · sortie %2\$s", "Arquivo %1\$s · saída %2\$s")
     val volume = Str("Volumen", "Volume", "Volume", "Volume")
     val about = Str("Acerca de", "About", "À propos", "Sobre")
+
+    val defaultPlayer = Str("Reproductor predeterminado", "Default player", "Lecteur par défaut", "Player padrão")
+    val defaultPlayerDesc = Str(
+        "Elige ResuenApp para FLAC, MP3, WAV y los demás formatos: al abrir un audio desde el Explorador sonará aquí, también con la app ya abierta.",
+        "Choose ResuenApp for FLAC, MP3, WAV and the other formats: audio opened from File Explorer will play here, even when the app is already open.",
+        "Choisissez ResuenApp pour FLAC, MP3, WAV et les autres formats : un audio ouvert depuis l’Explorateur sera lu ici, même si l’app est déjà ouverte.",
+        "Escolha o ResuenApp para FLAC, MP3, WAV e os outros formatos: o áudio aberto no Explorador tocará aqui, mesmo com o app já aberto.",
+    )
+    val defaultPlayerOpen = Str(
+        "Abrir aplicaciones predeterminadas",
+        "Open default apps",
+        "Ouvrir les applications par défaut",
+        "Abrir aplicativos padrão",
+    )
+    val installedAt = Str("Instalada en", "Installed at", "Installée dans", "Instalado em")
     val version = Str("Versión %1\$s", "Version %1\$s", "Version %1\$s", "Versão %1\$s")
 
     val play = Str("Reproducir", "Play", "Lecture", "Tocar")
@@ -238,6 +253,12 @@ object S {
     val selectAll = Str("Seleccionar todo", "Select all", "Tout sélectionner", "Selecionar tudo")
     val clearSelection = Str("Quitar selección", "Clear selection", "Effacer la sélection", "Limpar seleção")
     val editSelected = Str("Asignar álbum y artista…", "Set album and artist…", "Définir l'album et l'artiste…", "Definir álbum e artista…")
+    val addSelectedToPlaylist = Str(
+        "Añadir %1\$d canciones a una lista…",
+        "Add %1\$d songs to a playlist…",
+        "Ajouter %1\$d titres à une playlist…",
+        "Adicionar %1\$d músicas a uma playlist…",
+    )
     val editSelectedTags = Str(
         "Editar etiquetas de %1\$d canciones…",
         "Edit tags of %1\$d songs…",
@@ -258,8 +279,9 @@ object S {
     val sideRight = Str("A la derecha", "On the right", "À droite", "À direita")
     val sideLeft = Str("A la izquierda", "On the left", "À gauche", "À esquerda")
     val swapSide = Str("Cambiar de lado", "Switch side", "Changer de côté", "Trocar de lado")
-    val collapseSidebar = Str("Contraer biblioteca", "Collapse library", "Réduire la bibliothèque", "Recolher biblioteca")
-    val expandSidebar = Str("Expandir biblioteca", "Expand library", "Développer la bibliothèque", "Expandir biblioteca")
+    val collapseSidebar = Str("Contraer menú", "Collapse menu", "Réduire le menu", "Recolher menu")
+    val expandSidebar = Str("Expandir menú", "Expand menu", "Développer le menu", "Expandir menu")
+    val toggleTheme = Str("Cambiar tema claro u oscuro", "Switch light or dark theme", "Basculer thème clair ou sombre", "Alternar tema claro ou escuro")
 
     // Listas de reproducción
     val playlists = Str("Listas", "Playlists", "Playlists", "Playlists")
@@ -297,6 +319,18 @@ object S {
     // Mini reproductor
     val miniPlayer = Str("Mini reproductor", "Mini player", "Mini lecteur", "Mini player")
     val fullView = Str("Vista completa", "Full view", "Vue complète", "Visualização completa")
+    val miniOnMinimize = Str(
+        "Abrir el mini reproductor al minimizar la ventana",
+        "Open the mini player when the window is minimized",
+        "Ouvrir le mini lecteur quand la fenêtre est réduite",
+        "Abrir o mini player ao minimizar a janela",
+    )
+    val miniOnMinimizeDesc = Str(
+        "Solo si hay una canción cargada. Para volver, usa el botón de vista completa o pulsa Esc.",
+        "Only when a song is loaded. To go back, use the full view button or press Esc.",
+        "Seulement si un morceau est chargé. Pour revenir, utilisez le bouton vue complète ou appuyez sur Échap.",
+        "Somente se houver uma música carregada. Para voltar, use o botão de visualização completa ou pressione Esc.",
+    )
     val alwaysOnTop = Str(
         "Siempre encima de las demás ventanas",
         "Always on top of other windows",
@@ -386,4 +420,111 @@ object S {
     val updateInstall = Str("Descargar e instalar", "Download and install", "Télécharger et installer", "Baixar e instalar")
     val updateDownloading = Str("Descargando… %1\$d %%", "Downloading… %1\$d %%", "Téléchargement… %1\$d %%", "Baixando… %1\$d %%")
     val updateFailed = Str("No se pudo actualizar: %1\$s", "Update failed: %1\$s", "Échec de la mise à jour : %1\$s", "Não foi possível atualizar: %1\$s")
+    val updateDownloadFailed = Str(
+        "La descarga se interrumpió: %1\$s. Reanuda para seguir donde quedó.",
+        "The download was interrupted: %1\$s. Resume to pick up where it left off.",
+        "Le téléchargement a été interrompu : %1\$s. Reprenez pour continuer là où il s'est arrêté.",
+        "O download foi interrompido: %1\$s. Retome para continuar de onde parou.",
+    )
+    val updateResume = Str("Reanudar descarga", "Resume download", "Reprendre le téléchargement", "Retomar download")
+    val updateResumePill = Str("Reanudar %1\$s", "Resume %1\$s", "Reprendre %1\$s", "Retomar %1\$s")
+    val updateCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+
+    // Sincronizar letras sin tiempos (como en Android)
+    val sourceUser = Str("sincronizada por ti", "synced by you", "synchronisées par vous", "sincronizada por você")
+    val lyricsEstimated = Str("Sincronización estimada", "Estimated sync", "Synchronisation estimée", "Sincronização estimada")
+    val lyricsEstimating = Str("Estimando los tiempos…", "Estimating timings…", "Estimation du minutage…", "Estimando os tempos…")
+    val lyricsEstimate = Str("Estimar tiempos", "Estimate timings", "Estimer le minutage", "Estimar tempos")
+    val lyricsUnsynced = Str("Sin sincronizar", "Not synced", "Non synchronisées", "Não sincronizada")
+    val tapSync = Str("Sincronizar a mano", "Sync manually", "Synchroniser à la main", "Sincronizar manualmente")
+    val tapSyncHint = Str(
+        "Reproduce desde el inicio y pulsa «Marcar» (o Intro) justo cuando empiece a cantarse cada línea. Retroceso deshace la última.",
+        "Play from the start and press “Mark” (or Enter) right when each line begins to be sung. Backspace undoes the last one.",
+        "Lancez la lecture depuis le début et appuyez sur « Marquer » (ou Entrée) au moment où chaque ligne commence à être chantée. Retour arrière annule la dernière.",
+        "Toque desde o início e aperte “Marcar” (ou Enter) bem quando cada linha começar a ser cantada. Backspace desfaz a última.",
+    )
+    val tapSyncMark = Str("Marcar línea %1\$d de %2\$d", "Mark line %1\$d of %2\$d", "Marquer la ligne %1\$d sur %2\$d", "Marcar linha %1\$d de %2\$d")
+    val tapSyncPlayToMark = Str("Reproduce para marcar", "Play to start marking", "Lancez la lecture pour marquer", "Dê play para marcar")
+    val tapSyncSave = Str("Guardar", "Save", "Enregistrer", "Salvar")
+    val tapSyncRestart = Str("Desde el inicio", "From the start", "Depuis le début", "Desde o início")
+    val tapSyncUndo = Str("Deshacer", "Undo", "Annuler la dernière", "Desfazer")
+    val tapSyncCancel = Str("Cancelar", "Cancel", "Annuler", "Cancelar")
+    val tapSyncSavedFolder = Str("Guardado como .lrc junto a la canción", "Saved as .lrc next to the song", "Enregistré en .lrc à côté du morceau", "Salvo como .lrc junto à música")
+    val tapSyncSavedApp = Str(
+        "Guardado en la app (no se pudo escribir en la carpeta de la canción)",
+        "Saved in the app (couldn't write to the song's folder)",
+        "Enregistré dans l'app (impossible d'écrire dans le dossier du morceau)",
+        "Salvo no app (não foi possível gravar na pasta da música)",
+    )
+    val lyricsSettings = Str("Letras", "Lyrics", "Paroles", "Letras")
+    val lyricsAutoSync = Str(
+        "Sincronizar letras sin tiempos al abrirlas",
+        "Sync untimed lyrics when opened",
+        "Synchroniser les paroles sans minutage à l'ouverture",
+        "Sincronizar letras sem tempos ao abri-las",
+    )
+    val lyricsAutoSyncDesc = Str(
+        "Estima en el equipo cuándo se canta cada línea (aproximado, sin internet). Para tiempos exactos, usa «Sincronizar a mano» en el panel de la letra.",
+        "Estimates on this computer when each line is sung (approximate, offline). For exact timings, use “Sync manually” in the lyrics panel.",
+        "Estime sur cet ordinateur quand chaque ligne est chantée (approximatif, hors ligne). Pour un minutage exact, utilisez « Synchroniser à la main » dans le panneau des paroles.",
+        "Estima no computador quando cada linha é cantada (aproximado, sem internet). Para tempos exatos, use “Sincronizar manualmente” no painel da letra.",
+    )
+
+    // Google Drive
+    val drive = Str("Google Drive", "Google Drive", "Google Drive", "Google Drive")
+    val driveConnectTitle = Str("Escucha tu música de Google Drive", "Play your music from Google Drive", "Écoutez votre musique depuis Google Drive", "Ouça suas músicas do Google Drive")
+    val driveConnectBody = Str(
+        "Inicia sesión con tu cuenta de Google para explorar tus carpetas. Cada canción se descarga completa antes de sonar, así que se escucha sin pérdida, igual que el archivo original.",
+        "Sign in with your Google account to browse your folders. Each song is downloaded in full before it plays, so it sounds lossless, exactly like the original file.",
+        "Connectez-vous avec votre compte Google pour parcourir vos dossiers. Chaque titre est téléchargé en entier avant la lecture : le son est sans perte, identique au fichier d'origine.",
+        "Entre com sua conta do Google para navegar pelas suas pastas. Cada música é baixada inteira antes de tocar, então soa sem perdas, igual ao arquivo original.",
+    )
+    val driveConnect = Str("Conectar con Google", "Connect with Google", "Se connecter avec Google", "Conectar com o Google")
+    val driveWaiting = Str(
+        "Termina el inicio de sesión en el navegador…",
+        "Finish signing in in your browser…",
+        "Terminez la connexion dans le navigateur…",
+        "Termine o login no navegador…",
+    )
+    val driveNotConfigured = Str(
+        "Esta compilación no trae el cliente de Google configurado, así que Drive no está disponible.",
+        "This build doesn't include the Google client setup, so Drive isn't available.",
+        "Cette version n'inclut pas la configuration du client Google : Drive n'est pas disponible.",
+        "Esta versão não inclui a configuração do cliente do Google, então o Drive não está disponível.",
+    )
+    val driveSignedInAs = Str("Conectado como %1\$s", "Signed in as %1\$s", "Connecté en tant que %1\$s", "Conectado como %1\$s")
+    val driveSignOut = Str("Desconectar", "Disconnect", "Déconnecter", "Desconectar")
+    val driveMyDrive = Str("Mi unidad", "My Drive", "Mon Drive", "Meu Drive")
+    val driveShared = Str("Compartido conmigo", "Shared with me", "Partagés avec moi", "Compartilhados comigo")
+    val driveEmpty = Str(
+        "No hay carpetas ni canciones aquí",
+        "No folders or songs here",
+        "Aucun dossier ni titre ici",
+        "Nenhuma pasta ou música aqui",
+    )
+    val driveLoading = Str("Cargando…", "Loading…", "Chargement…", "Carregando…")
+    val driveDownloading = Str("Descargando %1\$d de %2\$d · %3\$s", "Downloading %1\$d of %2\$d · %3\$s", "Téléchargement %1\$d sur %2\$d · %3\$s", "Baixando %1\$d de %2\$d · %3\$s")
+    val driveCache = Str("Caché de Drive: %1\$s", "Drive cache: %1\$s", "Cache Drive : %1\$s", "Cache do Drive: %1\$s")
+    val driveClearCache = Str("Vaciar caché", "Clear cache", "Vider le cache", "Limpar cache")
+    val driveError = Str("Error de Google Drive: %1\$s", "Google Drive error: %1\$s", "Erreur Google Drive : %1\$s", "Erro do Google Drive: %1\$s")
+    val driveSessionExpired = Str(
+        "La sesión de Google venció. Vuelve a conectar Drive.",
+        "Your Google session expired. Connect Drive again.",
+        "La session Google a expiré. Reconnectez Drive.",
+        "A sessão do Google expirou. Conecte o Drive de novo.",
+    )
+    val driveBrowserOk = Str("Listo, Drive quedó conectado", "Done, Drive is connected", "C'est fait, Drive est connecté", "Pronto, o Drive está conectado")
+    val driveBrowserOkBody = Str(
+        "Ya puedes cerrar esta pestaña y volver a ResuenApp.",
+        "You can close this tab and go back to ResuenApp.",
+        "Vous pouvez fermer cet onglet et revenir à ResuenApp.",
+        "Você já pode fechar esta aba e voltar ao ResuenApp.",
+    )
+    val driveBrowserFailed = Str("No se conectó Drive", "Drive wasn't connected", "Drive n'a pas été connecté", "O Drive não foi conectado")
+    val driveBrowserFailedBody = Str(
+        "Cierra esta pestaña y vuelve a intentarlo desde ResuenApp.",
+        "Close this tab and try again from ResuenApp.",
+        "Fermez cet onglet et réessayez depuis ResuenApp.",
+        "Feche esta aba e tente de novo pelo ResuenApp.",
+    )
 }

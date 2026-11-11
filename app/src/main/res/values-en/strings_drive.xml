@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drive_tab">Drive</string>
+    <string name="drive_connect_title">Play your music from Google Drive</string>
+    <string name="drive_connect_body">Sign in with your Google account to browse your folders. Each song is downloaded in full before it plays, so it sounds lossless, exactly like the original file.</string>
+    <string name="drive_connect">Connect with Google</string>
+    <string name="drive_connecting">Connecting…</string>
+    <string name="drive_signed_in_as">Signed in as %1$s</string>
+    <string name="drive_sign_out">Disconnect</string>
+    <string name="drive_my_drive">My Drive</string>
+    <string name="drive_shared">Shared with me</string>
+    <string name="drive_empty">No folders or songs here</string>
+    <string name="drive_downloading">Downloading %1$d of %2$d · %3$s</string>
+    <string name="drive_cache">Drive cache: %1$s</string>
+    <string name="drive_clear_cache">Clear cache</string>
+    <string name="drive_error">Google Drive error: %1$s</string>
+    <string name="drive_session_expired">Your Google session expired. Connect Drive again.</string>
+</resources>

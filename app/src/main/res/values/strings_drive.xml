@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drive_tab">Drive</string>
+    <string name="drive_connect_title">Escucha tu música de Google Drive</string>
+    <string name="drive_connect_body">Inicia sesión con tu cuenta de Google para explorar tus carpetas. Cada canción se descarga completa antes de sonar, así que se escucha sin pérdida, igual que el archivo original.</string>
+    <string name="drive_connect">Conectar con Google</string>
+    <string name="drive_connecting">Conectando…</string>
+    <string name="drive_signed_in_as">Conectado como %1$s</string>
+    <string name="drive_sign_out">Desconectar</string>
+    <string name="drive_my_drive">Mi unidad</string>
+    <string name="drive_shared">Compartido conmigo</string>
+    <string name="drive_empty">No hay carpetas ni canciones aquí</string>
+    <string name="drive_downloading">Descargando %1$d de %2$d · %3$s</string>
+    <string name="drive_cache">Caché de Drive: %1$s</string>
+    <string name="drive_clear_cache">Vaciar caché</string>
+    <string name="drive_error">Error de Google Drive: %1$s</string>
+    <string name="drive_session_expired">La sesión de Google venció. Vuelve a conectar Drive.</string>
+</resources>

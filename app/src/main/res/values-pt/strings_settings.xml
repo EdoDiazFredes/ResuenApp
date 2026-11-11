@@ -183,4 +183,13 @@
     <string name="update_dialog_title">Nova versão disponível</string>
     <string name="update_dialog_body">A versão %1$s está disponível. Ela é baixada e instalada por cima, sem perder sua biblioteca nem seus ajustes.</string>
     <string name="update_later">Mais tarde</string>
+    <string name="update_resume">Retomar</string>
+    <string name="update_cancel">Cancelar</string>
+    <string name="update_download_failed">O download foi interrompido: %1$s. Toque em Retomar para continuar de onde parou.</string>
+    <string name="update_channel_name">Atualizações</string>
+    <string name="update_notification_title">Baixando ResuenApp %1$s</string>
+    <string name="update_ready_title">Versão %1$s baixada</string>
+    <string name="update_ready_body">Toque para instalar.</string>
+    <string name="update_interrupted_title">Download interrompido</string>
+    <string name="update_interrupted_body">Abra o ResuenApp e toque em Retomar para continuar.</string>
 </resources>

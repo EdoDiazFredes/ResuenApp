@@ -45,6 +45,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.zIndex
+import cl.lossless.player.desktop.AppSettings
 import cl.lossless.player.desktop.DesktopPlaylists
 import cl.lossless.player.playlist.Playlist
 import java.awt.Cursor
@@ -73,6 +74,7 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -111,7 +113,10 @@ import androidx.compose.ui.unit.sp
 import cl.lossless.player.desktop.APP_VERSION
 import cl.lossless.player.desktop.Album
 import cl.lossless.player.desktop.Covers
+import cl.lossless.player.desktop.InstalledExe
 import cl.lossless.player.desktop.IsMac
+import cl.lossless.player.desktop.IsWindows
+import cl.lossless.player.desktop.openWindowsDefaultApps
 import cl.lossless.player.desktop.PlaybackAction
 import cl.lossless.player.desktop.Shortcuts
 import cl.lossless.player.desktop.Lang
@@ -258,7 +263,7 @@ fun GhostButton(icon: ImageVector?, label: String, onClick: () -> Unit) {
 
 /** Cabecera de una vista: ruta monoespaciada en cian, título grande, resumen y acción. */
 @Composable
-private fun ViewHeader(
+fun ViewHeader(
     title: String,
     eyebrow: String? = null,
     eyebrowIcon: ImageVector = Icons.Rounded.Folder,
@@ -437,7 +442,10 @@ private fun SelectionBar(selection: TrackSelection, tracks: List<Track>, modifie
         if (!selection.paths.containsAll(tracks.map { it.path })) {
             GhostButton(null, t(S.selectAll)) { selection.selectAll(tracks) }
         }
-        if (actions != null) PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        if (actions != null) {
+            GhostButton(Icons.AutoMirrored.Rounded.PlaylistAdd, t(S.addToPlaylist), actions.addSelectionToPlaylist)
+            PrimaryButton(Icons.Rounded.Edit, t(S.editSelected), actions.editSelection)
+        }
         SmallIconButton(Icons.Rounded.Close, t(S.clearSelection), onClick = selection::clear)
     }
 }
@@ -468,11 +476,13 @@ private fun TrackContextMenu(track: Track, content: @Composable () -> Unit) {
     val cover = t(S.searchCover)
     val lyrics = t(S.searchLyrics)
     val playlist = t(S.addToPlaylist)
+    val playlistMany = selection?.let { t(S.addSelectedToPlaylist, it.paths.size) }
     ContextMenuArea(
         items = {
             val inSelection = selection != null && track.path in selection.paths && selection.paths.size > 1
             buildList {
-                add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
+                if (inSelection && playlistMany != null) add(ContextMenuItem(playlistMany) { actions.addSelectionToPlaylist() })
+                else add(ContextMenuItem(playlist) { actions.addToPlaylist(listOf(track)) })
                 if (inSelection && editMany != null) add(ContextMenuItem(editMany) { actions.editSelection() })
                 else add(ContextMenuItem(edit) { actions.editTags(listOf(track)) })
                 if (selection != null && track.path !in selection.paths) add(ContextMenuItem(select) { selection.toggle(track.path) })
@@ -915,15 +925,34 @@ fun SettingsScreen(
 
         AppearanceCard()
 
+        LyricsSettingsCard()
+
         SettingsCard(t(S.equalizer)) { EqualizerPanel(Modifier.fillMaxWidth()) }
 
         ShortcutsCard()
+
+        SettingsCard(t(S.miniPlayer)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t(S.miniOnMinimize), color = Neon.Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = MiniPlayerPrefs.openOnMinimize,
+                    onCheckedChange = MiniPlayerPrefs::updateOpenOnMinimize,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
+                        uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
+                    ),
+                )
+            }
+            Text(t(S.miniOnMinimizeDesc), color = Neon.Muted, fontSize = 12.sp)
+        }
 
         SettingsCard(t(S.output)) {
             Text(t(S.outputShared), color = Neon.Text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             if (outputFormat != null) Text(outputFormat, color = Neon.Accent, fontFamily = Mono, fontSize = 12.sp)
             Text(t(S.outputNote), color = Neon.Muted, fontSize = 12.sp)
         }
+
+        if (IsWindows) DefaultPlayerCard()
 
         SettingsCard(t(S.about)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -933,6 +962,18 @@ fun SettingsScreen(
             }
             UpdateSettings(onCheckUpdate, onInstallUpdate)
         }
+    }
+}
+
+/** Windows: dejar ResuenApp como reproductor de audio predeterminado y ver dónde está instalada. */
+@Composable
+private fun DefaultPlayerCard() {
+    SettingsCard(t(S.defaultPlayer)) {
+        Text(t(S.defaultPlayerDesc), color = Neon.Muted, fontSize = 12.sp)
+        InstalledExe?.let { exe ->
+            Text("${t(S.installedAt)}: $exe", color = Neon.Text, fontFamily = Mono, fontSize = 12.sp)
+        }
+        GhostButton(Icons.Rounded.OpenInNew, t(S.defaultPlayerOpen)) { openWindowsDefaultApps() }
     }
 }
 
@@ -984,6 +1025,32 @@ private fun AppearanceCard() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill(t(S.sideRight), selected = !Appearance.panelLeft) { Appearance.placePanel(false) }
             Pill(t(S.sideLeft), selected = Appearance.panelLeft) { Appearance.placePanel(true) }
+        }
+    }
+}
+
+/** Letras: estimar los tiempos de las que vienen solo como texto (como en Ajustes de Android). */
+@Composable
+private fun LyricsSettingsCard() {
+    SettingsCard(t(S.lyricsSettings)) {
+        var autoSync by remember { mutableStateOf(AppSettings.lyricsAutoSync) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(t(S.lyricsAutoSync), color = Neon.Text, fontSize = 13.sp)
+                Text(t(S.lyricsAutoSyncDesc), color = Neon.Muted, fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(
+                checked = autoSync,
+                onCheckedChange = {
+                    autoSync = it
+                    AppSettings.lyricsAutoSync = it
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
+                    uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
+                ),
+            )
         }
     }
 }
@@ -1044,7 +1111,7 @@ private fun SubLabel(text: String) {
 }
 
 @Composable
-private fun Pill(label: String, selected: Boolean, fontFamily: FontFamily? = null, onClick: () -> Unit) {
+fun Pill(label: String, selected: Boolean, fontFamily: FontFamily? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(50)
     Text(
         label,
