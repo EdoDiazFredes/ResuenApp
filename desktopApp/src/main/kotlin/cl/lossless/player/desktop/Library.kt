@@ -206,6 +206,10 @@ object AppSettings {
     var miniOnTop: Boolean
         get() = prefs.getBoolean("mini_on_top", true)
         set(value) = prefs.putBoolean("mini_on_top", value)
+    // Al minimizar la ventana completa se abre el mini reproductor (si hay una canción cargada).
+    var miniOnMinimize: Boolean
+        get() = prefs.getBoolean("mini_on_minimize", true)
+        set(value) = prefs.putBoolean("mini_on_minimize", value)
     var miniPosition: Pair<Float, Float>?
         get() {
             val x = prefs.getFloat("mini_x", Float.NaN)

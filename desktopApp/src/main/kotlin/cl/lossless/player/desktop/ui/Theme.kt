@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.lossless.player.desktop.AppSettings
@@ -337,7 +338,13 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier, color: Color = Neo
 
 /** Insignia monoespaciada: formato, bits/kHz, estado de la salida. */
 @Composable
-fun NeonBadge(text: String, color: Color = Neon.Muted, emphasized: Boolean = false, modifier: Modifier = Modifier) {
+fun NeonBadge(
+    text: String,
+    color: Color = Neon.Muted,
+    emphasized: Boolean = false,
+    modifier: Modifier = Modifier,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+) {
     val shape = RoundedCornerShape(4.dp)
     Text(
         text,
@@ -350,6 +357,7 @@ fun NeonBadge(text: String, color: Color = Neon.Muted, emphasized: Boolean = fal
         fontFamily = Mono,
         fontSize = 10.sp,
         fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
+        lineHeight = lineHeight,
         maxLines = 1,
     )
 }

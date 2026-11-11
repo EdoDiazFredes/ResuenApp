@@ -931,6 +931,21 @@ fun SettingsScreen(
 
         ShortcutsCard()
 
+        SettingsCard(t(S.miniPlayer)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t(S.miniOnMinimize), color = Neon.Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = MiniPlayerPrefs.openOnMinimize,
+                    onCheckedChange = MiniPlayerPrefs::updateOpenOnMinimize,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Neon.OnAccent, checkedTrackColor = Neon.Accent,
+                        uncheckedThumbColor = Neon.Muted, uncheckedTrackColor = Neon.Card, uncheckedBorderColor = Neon.Border,
+                    ),
+                )
+            }
+            Text(t(S.miniOnMinimizeDesc), color = Neon.Muted, fontSize = 12.sp)
+        }
+
         SettingsCard(t(S.output)) {
             Text(t(S.outputShared), color = Neon.Text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             if (outputFormat != null) Text(outputFormat, color = Neon.Accent, fontFamily = Mono, fontSize = 12.sp)
