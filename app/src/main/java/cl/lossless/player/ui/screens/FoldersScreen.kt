@@ -48,6 +48,7 @@ import cl.lossless.player.ui.components.EmptyState
 import cl.lossless.player.ui.components.FolderSortButton
 import cl.lossless.player.ui.components.ScreenHeader
 import cl.lossless.player.ui.components.SearchField
+import cl.lossless.player.ui.components.rememberSearchResult
 import cl.lossless.player.ui.components.TrackActions
 import cl.lossless.player.ui.components.TrackCard
 import cl.lossless.player.ui.components.albumTrackNumber
@@ -72,11 +73,13 @@ fun FoldersScreen(
 
     // Búsqueda dentro de la carpeta actual y todas sus subcarpetas
     var query by rememberSaveable { mutableStateOf("") }
-    val folderMatches = remember(tracks, segments, query, folderSort) {
-        LibrarySearch.folders(tracks, segments, query)
-            .sortedFolders(folderSort, { it.name }, { it.trackCount }, { it.lastModified })
+    // Se busca en segundo plano para que el texto aparezca al instante al escribir.
+    val matches by rememberSearchResult(query, tracks, segments, folderSort) { q ->
+        LibrarySearch.folders(tracks, segments, q)
+            .sortedFolders(folderSort, { it.name }, { it.trackCount }, { it.lastModified }) to
+            LibrarySearch.tracks(tracks, segments, q)
     }
-    val trackMatches = remember(tracks, segments, query) { LibrarySearch.tracks(tracks, segments, query) }
+    val (folderMatches, trackMatches) = matches
 
     fun open(newSegments: List<String>) {
         path = newSegments.joinToString("/")

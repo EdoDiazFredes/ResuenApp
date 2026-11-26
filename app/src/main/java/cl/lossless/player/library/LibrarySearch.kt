@@ -29,23 +29,30 @@ fun <T> List<T>.sortedFolders(
 /** Búsqueda sin distinguir mayúsculas ni tildes ("cancion" encuentra "Canción"). */
 object LibrarySearch {
 
-    fun normalize(text: String): String =
-        Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace(Regex("\\p{Mn}+"), "")
-            .lowercase()
-            .trim()
+    private val combiningMarks = Regex("\\p{Mn}+")
 
-    /** Todas las palabras de [query] deben aparecer en alguno de los [fields]. */
-    fun matches(query: String, vararg fields: String): Boolean {
-        val words = normalize(query).split(' ').filter { it.isNotEmpty() }
+    fun normalize(text: String): String {
+        // Atajo: el texto sin caracteres especiales (lo más común) no necesita descomponerse.
+        val plain = text.all { it.code < 0x80 }
+        val stripped = if (plain) text else combiningMarks.replace(Normalizer.normalize(text, Normalizer.Form.NFD), "")
+        return stripped.lowercase().trim()
+    }
+
+    /** Palabras de la búsqueda ya normalizadas; se calculan una vez por búsqueda, no por elemento. */
+    private fun words(query: String): List<String> = normalize(query).split(' ').filter { it.isNotEmpty() }
+
+    private fun matchesWords(words: List<String>, fields: Array<out String>): Boolean {
         if (words.isEmpty()) return true
         val haystack = fields.joinToString(" ") { normalize(it) }
         return words.all { it in haystack }
     }
 
+    /** Todas las palabras de [query] deben aparecer en alguno de los [fields]. */
+    fun matches(query: String, vararg fields: String): Boolean = matchesWords(words(query), fields)
+
     fun albums(albums: List<AlbumGroup>, query: String): List<AlbumGroup> =
         if (query.isBlank()) albums
-        else albums.filter { matches(query, it.title, it.artist) }
+        else words(query).let { w -> albums.filter { matchesWords(w, arrayOf(it.title, it.artist)) } }
 
     /**
      * Carpetas bajo [base] (a cualquier profundidad) cuyo nombre coincide con [query].
@@ -71,18 +78,20 @@ object LibrarySearch {
                 found[folder] = (count + 1) to maxOf(modified, dateModified)
             }
         }
+        val w = words(query)
         return found
-            .filterKeys { matches(query, it.last()) }
+            .filterKeys { matchesWords(w, arrayOf(it.last())) }
             .map { (segments, info) -> FolderEntry(segments.last(), segments, info.first, info.second) }
     }
 
     /** Pistas bajo [base] (a cualquier profundidad) que coinciden por título, artista o álbum. */
     fun tracks(tracks: List<Track>, base: List<String>, query: String): List<Track> {
         if (query.isBlank()) return emptyList()
+        val w = words(query)
         return tracks.filter { track ->
             val s = track.folderSegments
             s.size >= base.size && s.subList(0, base.size) == base &&
-                matches(query, track.title, track.artist, track.album, track.fileName)
+                matchesWords(w, arrayOf(track.title, track.artist, track.album, track.fileName))
         }
     }
 }

@@ -213,9 +213,15 @@ private fun Library(player: Player, searchFocus: FocusRequester, language: Lang?
     val searchIndex = remember(tracks) {
         tracks.map { "${it.title} ${it.artist} ${it.album} ${it.albumArtist} ${it.formatLabel}".searchKey() }
     }
-    val filtered = remember(tracks, query) {
+    // Se filtra en segundo plano y tras una breve pausa al escribir: así el texto aparece al
+    // instante en el buscador aunque la biblioteca sea grande.
+    var filtered by remember { mutableStateOf(tracks) }
+    LaunchedEffect(tracks, searchIndex, query) {
         val q = query.trim().searchKey()
-        if (q.isEmpty()) tracks else tracks.filterIndexed { i, _ -> q in searchIndex[i] }
+        filtered = if (q.isEmpty()) tracks else {
+            delay(120)
+            withContext(Dispatchers.Default) { tracks.filterIndexed { i, _ -> q in searchIndex[i] } }
+        }
     }
     val various = t(S.variousArtists)
     val unknownArtist = t(S.unknownArtist)
