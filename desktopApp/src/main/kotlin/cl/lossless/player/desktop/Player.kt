@@ -386,13 +386,13 @@ class Player {
 object Decoder {
 
     fun open(file: java.io.File): FFmpegFrameGrabber {
-        val g = FFmpegFrameGrabber(file)
+        val g = grabberFor(file)
         g.sampleFormat = avutil.AV_SAMPLE_FMT_S32
         g.start()
         if (g.audioChannels > 2) {
             // Java Sound no abre salidas multicanal de forma fiable: se mezcla a estéreo.
             g.stop(); g.release()
-            return FFmpegFrameGrabber(file).apply {
+            return grabberFor(file).apply {
                 sampleFormat = avutil.AV_SAMPLE_FMT_S32
                 audioChannels = 2
                 start()
@@ -400,6 +400,16 @@ object Decoder {
         }
         return g
     }
+
+    /**
+     * javacv entrega la ruta a FFmpeg como bytes del juego de caracteres del sistema, y en
+     * Windows FFmpeg la lee como UTF-8: una ruta con tildes o eñes ("había") llega rota y
+     * avformat_open_input falla con -2 (archivo no encontrado). En esos casos el archivo se lee
+     * desde Java, que sí maneja bien esos nombres, y FFmpeg solo recibe los bytes.
+     */
+    internal fun grabberFor(file: java.io.File): FFmpegFrameGrabber =
+        if (file.path.all { it.code < 0x80 }) FFmpegFrameGrabber(file)
+        else FFmpegFrameGrabber(SeekableFileStream(file), Int.MAX_VALUE - 8)
 
     /** Muestras del cuadro como enteros de 32 bits intercalados (L R L R…). */
     fun toInt32Interleaved(frame: Frame, channels: Int): IntArray? {
