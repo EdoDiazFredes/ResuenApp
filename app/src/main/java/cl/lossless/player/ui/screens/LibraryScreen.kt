@@ -79,6 +79,7 @@ import cl.lossless.player.ui.components.TrackList
 import cl.lossless.player.ui.components.TrackSelection
 import cl.lossless.player.ui.components.albumTrackNumber
 import cl.lossless.player.ui.components.formatDuration
+import cl.lossless.player.ui.components.rememberSearchResult
 
 private enum class LibraryTab { TRACKS, ALBUMS, FOLDERS }
 
@@ -122,12 +123,13 @@ fun LibraryScreen(
             FolderGroup(key, tracks.first().folderName, folderDisplayPath(segments), segments, tracks)
         }
     }
-    val visibleFolders = remember(folders, query, state.folderSort) {
+    // Se filtra en segundo plano para que el texto aparezca al instante al escribir.
+    val visibleFolders by rememberSearchResult(query, folders, state.folderSort) { q ->
         folders
-            .filter { LibrarySearch.matches(query, it.name, it.path) }
+            .filter { LibrarySearch.matches(q, it.name, it.path) }
             .sortedFolders(state.folderSort, { it.name }, { it.tracks.size }, { it.lastModified })
     }
-    val visibleAlbums = remember(state.albums, query) { LibrarySearch.albums(state.albums, query) }
+    val visibleAlbums by rememberSearchResult(query, state.albums) { q -> LibrarySearch.albums(state.albums, q) }
 
     // Detalles (álbum o carpeta) sobre la pestaña actual
     state.albums.firstOrNull { it.key == openAlbumKey }?.let { album ->
